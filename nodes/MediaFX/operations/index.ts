@@ -1,5 +1,6 @@
 export * from './merge';
 export * from './trim';
+export * from './speed';
 export * from './mixAudio';
 export * from './addSubtitle';
 export * from './addText';

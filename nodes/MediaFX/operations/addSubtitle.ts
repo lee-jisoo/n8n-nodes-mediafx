@@ -2,64 +2,82 @@ import { IExecuteFunctions, NodeOperationError, IDataObject } from 'n8n-workflow
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import ffmpeg = require('fluent-ffmpeg');
-// import SrtParser from 'srt-parser-2';
 import { getTempFile, runFfmpeg, getAvailableFonts } from '../utils';
 
-function getPositionFromAlignment(
+/**
+ * Escape special characters in file path for FFmpeg subtitles filter.
+ * FFmpeg subtitles filter requires escaping: \ : [ ] ' 
+ */
+function escapeSubtitlePath(filePath: string): string {
+	return filePath
+		.replace(/\\/g, '\\\\\\\\')  // Backslash (Windows paths)
+		.replace(/:/g, '\\:')         // Colon
+		.replace(/\[/g, '\\[')        // Square brackets
+		.replace(/\]/g, '\\]')
+		.replace(/'/g, "\\'");        // Single quote
+}
+
+/**
+ * Build ASS/SSA style string for subtitles filter force_style option.
+ * This converts our style options to FFmpeg's force_style format.
+ */
+function buildForceStyle(
+	fontName: string,
+	fontSize: number,
+	fontColor: string,
 	horizontalAlign: string,
 	verticalAlign: string,
-	paddingX: number,
-	paddingY: number
-): { x: string; y: string } {
-	let x: string;
-	let y: string;
-
-	// Set X position based on horizontal alignment
-	switch (horizontalAlign) {
-		case 'left':
-			x = `${paddingX}`;
-			break;
-		case 'right':
-			x = `w-text_w-${paddingX}`;
-			break;
-		case 'center':
-		default:
-			x = '(w-text_w)/2';
-			break;
+	marginV: number,
+): string {
+	// Convert color from CSS format to ASS format (AABBGGRR)
+	// Default white = &H00FFFFFF
+	let assColor = '&H00FFFFFF';
+	if (fontColor && fontColor.startsWith('#') && fontColor.length === 7) {
+		// Convert #RRGGBB to &H00BBGGRR (ASS uses BGR order with alpha prefix)
+		const r = fontColor.substring(1, 3);
+		const g = fontColor.substring(3, 5);
+		const b = fontColor.substring(5, 7);
+		assColor = `&H00${b}${g}${r}`.toUpperCase();
+	} else if (fontColor === 'white') {
+		assColor = '&H00FFFFFF';
+	} else if (fontColor === 'black') {
+		assColor = '&H00000000';
+	} else if (fontColor === 'yellow') {
+		assColor = '&H0000FFFF';
+	} else if (fontColor === 'red') {
+		assColor = '&H000000FF';
 	}
 
-	// Set Y position based on vertical alignment
-	switch (verticalAlign) {
-		case 'top':
-			y = `${paddingY}`;
-			break;
-		case 'bottom':
-			y = `h-th-${paddingY}`;
-			break;
-		case 'middle':
-		default:
-			y = '(h-text_h)/2';
-			break;
+	// Alignment mapping for ASS (numpad style)
+	// 1=bottom-left, 2=bottom-center, 3=bottom-right
+	// 4=middle-left, 5=middle-center, 6=middle-right
+	// 7=top-left, 8=top-center, 9=top-right
+	let alignment = 2; // default: bottom-center
+	if (verticalAlign === 'top') {
+		alignment = horizontalAlign === 'left' ? 7 : horizontalAlign === 'right' ? 9 : 8;
+	} else if (verticalAlign === 'middle') {
+		alignment = horizontalAlign === 'left' ? 4 : horizontalAlign === 'right' ? 6 : 5;
+	} else {
+		// bottom (default)
+		alignment = horizontalAlign === 'left' ? 1 : horizontalAlign === 'right' ? 3 : 2;
 	}
 
-	return { x, y };
-}
+	const styleParams = [
+		`FontName=${fontName}`,
+		`FontSize=${fontSize}`,
+		`PrimaryColour=${assColor}`,
+		`OutlineColour=&H00000000`,  // Black outline
+		`BackColour=&H80000000`,     // Semi-transparent black background
+		`Bold=0`,
+		`Italic=0`,
+		`BorderStyle=4`,             // Box style (background box)
+		`Outline=1`,
+		`Shadow=0`,
+		`Alignment=${alignment}`,
+		`MarginV=${marginV}`,
+	];
 
-// Helper to convert srt time format "00:00:08,220" to seconds
-function srtTimeToSeconds(time: string): number {
-	const parts = time.split(/[:,]/);
-	const hours = parseInt(parts[0], 10);
-	const minutes = parseInt(parts[1], 10);
-	const seconds = parseInt(parts[2], 10);
-	const milliseconds = parseInt(parts[3], 10);
-	return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
-}
-
-interface SrtEntry {
-	id: string;
-	startTime: string;
-	endTime: string;
-	text: string;
+	return styleParams.join(',');
 }
 
 export async function executeAddSubtitle(
@@ -71,7 +89,7 @@ export async function executeAddSubtitle(
 ): Promise<string> {
 	const outputPath = getTempFile(path.extname(video));
 
-	// 1. Get Font Path from fontKey
+	// 1. Get Font from fontKey
 	const allFonts = getAvailableFonts();
 	const fontKey = (style.fontKey as string) || 'noto-sans-kr';
 	const font = allFonts[fontKey] as IDataObject | undefined;
@@ -83,62 +101,42 @@ export async function executeAddSubtitle(
 			{ itemIndex },
 		);
 	}
-	const fontPath = font.path as string;
 
-	// 2. Parse SRT file
-	const srtContent = fs.readFileSync(subtitleFile, 'utf8');
-	const SrtParser = (await import('srt-parser-2')).default;
-	const parser = new SrtParser();
-	const srtEntries: SrtEntry[] = parser.fromSrt(srtContent);
+	const fontName = (font.name as string) || 'Sans';
+	const fontSize = (style.size as number) || 48;
+	const fontColor = (style.color as string) || 'white';
 
-	if (srtEntries.length === 0) {
-		throw new NodeOperationError(this.getNode(), `Could not parse SRT file or it is empty.`, {
-			itemIndex,
-		});
-	}
-
-	// 3. Handle position based on position type
-	let positionX: string;
-	let positionY: string;
-	
+	// 2. Handle position based on position type
 	const positionType = style.positionType || 'alignment';
-	
+	let horizontalAlign = 'center';
+	let verticalAlign = 'bottom';
+	let marginV = 20;
+
 	if (positionType === 'alignment') {
-		const horizontalAlign = (style.horizontalAlign as string) || 'center';
-		const verticalAlign = (style.verticalAlign as string) || 'bottom';
-		const paddingX = (style.paddingX as number) ?? (style.padding as number) ?? 20;
-		const paddingY = (style.paddingY as number) ?? (style.padding as number) ?? 20;
-		
-		const position = getPositionFromAlignment(horizontalAlign, verticalAlign, paddingX, paddingY);
-		positionX = position.x;
-		positionY = position.y;
-	} else {
-		// Custom position
-		positionX = (style.x as string) || '(w-text_w)/2';
-		positionY = (style.y as string) || 'h-th-50';
+		horizontalAlign = (style.horizontalAlign as string) || 'center';
+		verticalAlign = (style.verticalAlign as string) || 'bottom';
+		marginV = (style.paddingY as number) ?? (style.padding as number) ?? 20;
 	}
 
-	// 4. Build drawtext filter chain
-	const drawtextFilters = srtEntries.map((entry: SrtEntry) => {
-		const text = entry.text.replace(/'/g, `''`).replace(/:/g, `\\:`); // Escape single quotes and colons for ffmpeg
-		const startTime = srtTimeToSeconds(entry.startTime);
-		const endTime = srtTimeToSeconds(entry.endTime);
+	// 3. Build force_style for subtitles filter
+	const forceStyle = buildForceStyle(
+		fontName,
+		fontSize,
+		fontColor,
+		horizontalAlign,
+		verticalAlign,
+		marginV,
+	);
 
-		const styleArgs = [
-			`fontfile=${fontPath}`,
-			`text='${text}'`,
-			`fontsize=${style.size || 48}`,
-			`fontcolor=${style.color || 'white'}`,
-			`box=1:boxcolor=black@0.5:boxborderw=5`, // Optional: Add a semi-transparent background box
-			`x=${positionX}`,
-			`y=${positionY}`,
-			`enable='between(t,${startTime},${endTime})'`,
-		];
-		return `drawtext=${styleArgs.join(':')}`;
-	});
+	// 4. Escape subtitle file path for FFmpeg
+	const escapedSubtitlePath = escapeSubtitlePath(subtitleFile);
+
+	// 5. Build subtitles filter (much more reliable than drawtext chain)
+	// Using subtitles filter processes the entire SRT file at once
+	const subtitlesFilter = `subtitles='${escapedSubtitlePath}':force_style='${forceStyle}'`;
 
 	const command = ffmpeg(video)
-		.videoFilters(drawtextFilters)
+		.videoFilters([subtitlesFilter])
 		.audioCodec('copy')
 		.save(outputPath);
 

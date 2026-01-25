@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2025-01-25
+
+### Added
+- **Speed operation**: Adjust video playback speed (slow motion or fast forward)
+  - Support speed range from 0.25x to 4x
+  - Option to adjust audio speed along with video
+  - Option to maintain original audio pitch when changing speed
+  - Output format selection (MP4, MOV, AVI, MKV)
+
+### Fixed
+- **addSubtitle operation**: Fixed subtitle display issue with slideshow/image-sequence videos
+  - Changed from `drawtext` filter chain to `subtitles` filter
+  - The `drawtext` filter's `enable='between(t,X,Y)'` condition was unreliable with image-sequence videos
+  - Now uses FFmpeg's native SRT parsing which handles timing correctly
+  - Added ASS/SSA style support for better subtitle formatting
+
+## [1.5.0] - 2025-01-20
+
+### Added
+- **Overlay Video operation**: Overlay a video on top of another video as a layer
+
 ## [1.4.0] - 2025-01-13
 
 ### Added

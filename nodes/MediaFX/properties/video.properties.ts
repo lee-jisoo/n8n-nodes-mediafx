@@ -24,6 +24,11 @@ export const videoProperties: INodeProperties[] = [
 				description: 'Cut a video to a specific start and end time',
 			},
 			{
+				name: 'Speed',
+				value: 'speed',
+				description: 'Adjust video playback speed (slow motion or fast forward)',
+			},
+			{
 				name: 'Transition',
 				value: 'multiTransition',
 				description: 'Apply transition effects between multiple videos',
@@ -1002,6 +1007,122 @@ export const videoProperties: INodeProperties[] = [
 	},
 
 	// ===================
+	// VIDEO SPEED FIELDS
+	// ===================
+	{
+		displayName: 'Video Source',
+		name: 'speedSource',
+		type: 'fixedCollection',
+		placeholder: 'Add Video Source',
+		displayOptions: {
+			show: {
+				resource: ['video'],
+				operation: ['speed'],
+			},
+		},
+		default: {},
+		options: [
+			{
+				displayName: 'Source',
+				name: 'source',
+				values: [
+					{
+						displayName: 'Source Type',
+						name: 'sourceType',
+						type: 'options',
+						options: [
+							{ name: 'URL', value: 'url' },
+							{ name: 'Binary Data', value: 'binary' },
+						],
+						default: 'url',
+					},
+					{
+						displayName: 'Value',
+						name: 'value',
+						type: 'string',
+						default: '',
+						placeholder: 'https://example.com/video.mp4',
+						displayOptions: { show: { sourceType: ['url'] } },
+					},
+					{
+						displayName: 'Binary Property',
+						name: 'binaryProperty',
+						type: 'string',
+						default: 'data',
+						description: 'Name of the binary property from the previous node',
+						placeholder: 'e.g., data',
+						displayOptions: { show: { sourceType: ['binary'] } },
+					},
+				],
+			},
+		],
+	},
+	{
+		displayName: 'Speed',
+		name: 'speed',
+		type: 'number',
+		typeOptions: {
+			minValue: 0.25,
+			maxValue: 4,
+			numberStepSize: 0.25,
+		},
+		displayOptions: {
+			show: {
+				resource: ['video'],
+				operation: ['speed'],
+			},
+		},
+		default: 1,
+		description: 'Speed multiplier. 0.5 = half speed (slow motion), 2 = double speed (fast forward). Range: 0.25x to 4x.',
+	},
+	{
+		displayName: 'Adjust Audio',
+		name: 'adjustAudio',
+		type: 'boolean',
+		displayOptions: {
+			show: {
+				resource: ['video'],
+				operation: ['speed'],
+			},
+		},
+		default: true,
+		description: 'Whether to adjust audio speed along with video. If disabled, audio will be removed.',
+	},
+	{
+		displayName: 'Maintain Audio Pitch',
+		name: 'maintainPitch',
+		type: 'boolean',
+		displayOptions: {
+			show: {
+				resource: ['video'],
+				operation: ['speed'],
+				adjustAudio: [true],
+			},
+		},
+		default: false,
+		description: 'Whether to maintain the original audio pitch when changing speed. Note: This may not work on all systems.',
+	},
+	{
+		displayName: 'Output Format',
+		name: 'speedOutputFormat',
+		type: 'options',
+		displayOptions: {
+			show: {
+				resource: ['video'],
+				operation: ['speed'],
+			},
+		},
+		options: [
+			{ name: 'MP4', value: 'mp4' },
+			{ name: 'MOV', value: 'mov' },
+			{ name: 'AVI', value: 'avi' },
+			{ name: 'MKV', value: 'mkv' },
+		],
+		default: 'mp4',
+		description: 'Output format for the speed-adjusted video',
+	},
+
+	// ===================
 	// OUTPUT FIELD NAME
 	// ===================
 	{
@@ -1011,7 +1132,7 @@ export const videoProperties: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['video'],
-				operation: ['merge', 'trim', 'multiTransition', 'singleFade', 'overlayVideo'],
+				operation: ['merge', 'trim', 'speed', 'multiTransition', 'singleFade', 'overlayVideo'],
 			},
 		},
 		default: 'data',

@@ -1,326 +1,154 @@
-# n8n-nodes-mediafx
+# @lee-jisoo/n8n-nodes-mediafx
 
-[![NPM Version](https://img.shields.io/npm/v/n8n-nodes-mediafx?style=flat-square)](https://www.npmjs.com/package/n8n-nodes-mediafx)
+[![NPM Version](https://img.shields.io/npm/v/@lee-jisoo/n8n-nodes-mediafx?style=flat-square)](https://www.npmjs.com/package/@lee-jisoo/n8n-nodes-mediafx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 [![N8N Community Node](https://img.shields.io/badge/n8n-community--node-blue.svg?style=flat-square)](https://n8n.io)
 
-This repository contains a custom n8n node for comprehensive, local media processing using the power of FFmpeg. It allows you to perform a wide range of video, audio, image, and text operations directly within your n8n workflows without needing any external API or service.
+> **Enhanced fork of [n8n-nodes-mediafx](https://github.com/dandacompany/n8n-nodes-mediafx)** with additional features and bug fixes.
 
-<!-- Optional: Add a GIF of the node in action here -->
-<!-- <p align="center"><img src="link/to/your/demo.gif" alt="MediaFX Node Demo"></p> -->
+This is a custom n8n node for comprehensive, local media processing using FFmpeg. It allows you to perform a wide range of video, audio, image, and text operations directly within your n8n workflows without needing any external API or service.
 
-## What's New in v1.5.0
+## 🆕 What's New in This Fork
 
--   **Video Overlay**: New operation to overlay a video on top of another video as a layer
-    - **Flexible Positioning**: Choose between alignment presets (left/center/right, top/middle/bottom) or custom coordinates
-    - **Percentage-based Sizing**: Scale overlay as percentage of main video dimensions
-    - **Pixel-based Sizing**: Specify exact pixel dimensions with aspect ratio preservation
-    - **Opacity Control**: Adjust overlay transparency (0-1)
-    - **Time Control**: Display overlay for specific time ranges
-    - **Audio Handling**: Choose main audio, overlay audio, mix both, or no audio
-    - **FFmpeg Expressions**: Support for advanced positioning using FFmpeg expressions
+### v1.6.0
+- **🎬 Speed Operation**: Adjust video playback speed (slow motion or fast forward)
+  - Speed range: 0.25x to 4x
+  - Option to adjust audio speed along with video
+  - Option to maintain original audio pitch
+  - Output format selection (MP4, MOV, AVI, MKV)
 
-### v1.4.2
+- **🐛 Subtitle Bug Fix**: Fixed subtitle display issue with slideshow/image-sequence videos
+  - Changed from `drawtext` filter chain to `subtitles` filter
+  - The original `drawtext` filter's `enable='between(t,X,Y)'` was unreliable with image-sequence videos
+  - Now uses FFmpeg's native SRT parsing for correct timing
 
--   **Bug Fix**: Fixed "did not produce an output" error in Separate Audio operation when video source is not properly configured
-    - Added proper validation with clear error message when source is missing
+## Why use this fork?
 
-### v1.4.1
+- **Speed Control**: Easily create slow-motion or fast-forward videos
+- **Reliable Subtitles**: Fixed critical bug where subtitles were dropped on slideshow videos
+- All original features from [n8n-nodes-mediafx](https://github.com/dandacompany/n8n-nodes-mediafx) included
 
--   **Separate Audio**: New Video operation to split video into muted video and extracted audio track
-    - Returns both outputs in a single item with customizable field names
-    - Support for multiple video formats (MP4, MOV, AVI, MKV) and audio formats (MP3, AAC, WAV, FLAC)
-    - Audio codec options including copy (no re-encoding) for fastest processing
+## Installation
 
-### v1.4.0
--   **Custom Output Field Names**: Configure binary output field names for better workflow organization
--   **Enhanced Merge Node Support**: Seamlessly work with n8n's Merge node for multi-input operations
--   **Automatic Resolution Handling**: Smart scaling for videos with different resolutions in transitions
--   **Improved Error Messages**: Better debugging with detailed binary property information
+### Via n8n Community Nodes (Recommended)
+1. Go to **Settings > Community Nodes**
+2. Click **Install**
+3. Enter `@lee-jisoo/n8n-nodes-mediafx`
+4. Click **Install**
 
-## Why use MediaFX?
+### Manual Installation
+```bash
+cd ~/.n8n/nodes
+npm install @lee-jisoo/n8n-nodes-mediafx
+# Restart n8n
+```
 
--   **Privacy-Focused**: All processing happens locally on your n8n instance. Your media files never leave your server.
--   **No External APIs**: No need for API keys, subscriptions, or paying for a third-party service.
--   **Powerful**: Leverages the full capabilities of FFmpeg for high-quality media manipulation.
--   **Self-Contained**: FFmpeg is automatically downloaded and included via `@ffmpeg-installer/ffmpeg`. No manual installation of system dependencies is required in most cases.
--   **Flexible**: Handles a wide variety of operations, from simple trims to complex audio mixing and text overlays.
+### Docker Installation
+```dockerfile
+# In your Dockerfile
+RUN cd /home/node/.n8n/nodes && npm install @lee-jisoo/n8n-nodes-mediafx
+```
 
 ## Features
 
--   **Video Processing**: Merge multiple clips, trim sections, apply transition effects between videos with automatic FFmpeg compatibility detection, and add fade-in/out effects to single videos.
--   **Advanced Audio Manipulation**: 
-    - Extract audio from video in multiple formats (MP3, WAV, AAC, FLAC)
-    - Mix audio tracks with precise volume control for each source
-    - **Partial Audio Mixing**: Insert audio at specific time ranges with start time and duration control
-    - **Audio Looping**: Automatically loop shorter audio to match desired duration
-    - **Independent Fade Effects**: Apply fade-in and fade-out effects with customizable duration for both full and partial mixing
--   **Advanced Image Operations**: 
-    - Convert images into video clips with custom dimensions and duration
-    - **Smart Watermarks**: Control position, size, rotation, and opacity
-    - **Time Control**: Display watermarks for specific time ranges or entire video
--   **Enhanced Text and Subtitles**: 
-    - Burn text overlays with extensive styling (font, size, color, outline, background box)
-    - **Smart Positioning**: Use alignment presets (left/center/right, top/middle/bottom) or custom coordinates
-    - **Padding Controls**: Separate horizontal and vertical padding from edges
-    - Add and style external subtitle files (`.srt`) with the same text styling options
--   **Font Management**: Upload, list, preview, validate, and delete your own custom fonts (TTF, OTF) to be used in text operations.
+### Video Operations
+| Operation | Description |
+|-----------|-------------|
+| **Merge** | Combine multiple videos into one |
+| **Trim** | Cut video to specific start/end time |
+| **Speed** | Adjust playback speed (0.25x - 4x) ⭐ NEW |
+| **Transition** | Apply transition effects between videos |
+| **Fade** | Apply fade in/out effects |
+| **Separate Audio** | Split into muted video + audio track |
+| **Overlay Video** | Overlay video on top of another |
 
-## Installation for n8n
+### Audio Operations
+| Operation | Description |
+|-----------|-------------|
+| **Extract** | Extract audio from video (MP3, WAV, AAC, FLAC) |
+| **Mix** | Mix audio tracks with volume control, partial mixing, looping, fade effects |
 
-1.  Go to **Settings > Community Nodes**.
-2.  Click **Install**.
-3.  Enter `n8n-nodes-mediafx` in the **Enter npm package name** field.
-4.  Click **Install** again.
+### Image Operations
+| Operation | Description |
+|-----------|-------------|
+| **Image to Video** | Create video from image with custom duration |
+| **Stamp Image** | Add watermark with position, size, rotation, opacity, time control |
 
-The node will be installed, and n8n will restart. You should then see the "MediaFX" node in your node panel.
+### Text/Subtitle Operations
+| Operation | Description |
+|-----------|-------------|
+| **Add String** | Burn text overlay with styling |
+| **Add Subtitle** | Add subtitles from SRT file ⭐ FIXED |
 
-For older n8n versions or manual installation:
-
-1.  Navigate to your n8n user data folder (by default, `~/.n8n/`).
-2.  Enter the `nodes` directory: `cd ~/.n8n/nodes`.
-3.  Install the package: `npm install n8n-nodes-mediafx`.
-4.  Restart your n8n instance.
-
-## Node: MediaFX
-
-This is the main node for all media processing operations. You select a `resource` type and then an `operation` to perform on that resource.
-
-### Resources & Operations
-
-#### **Video** Resource
--   `Merge`: Combine multiple video files into a single video.
--   `Trim`: Cut a video to a specific start and end time.
--   `Transition`: Apply transition effects between multiple videos with automatic FFmpeg version detection and fallback support.
--   `Fade`: Apply fade in/out effects to a single video.
--   `Separate Audio`: Split a video into a muted video file and an extracted audio file, returning both outputs simultaneously.
--   `Overlay Video`: Overlay a video on top of another video with flexible positioning and sizing options.
-
-#### **Audio** Resource
--   `Extract`: Extract the audio track from a video file into a specified format (MP3, WAV, AAC, FLAC).
--   `Mix`: Mix a primary video's audio with a secondary audio source with advanced features:
-    - **Volume Control**: Independent volume adjustment for both primary and secondary sources
-    - **Full Mix Mode**: Mix audio across the entire duration (shortest/longest/first source)
-    - **Partial Mix Mode**: Insert audio at specific time ranges with precise start time and duration
-    - **Audio Looping**: Automatically repeat shorter audio to fill the specified duration
-    - **Independent Fade Effects**: Apply fade-in and fade-out effects with customizable duration for both full and partial mixing
-
-#### **Image** Resource
--   `Image to Video`: Create a video from a source image, specifying duration and output dimensions.
--   `Stamp Image`: Advanced watermarking functionality to overlay images on videos:
-    - **Position & Size Control**: Precise pixel positioning and sizing
-    - **Rotation & Opacity**: Angle adjustment and transparency control
-    - **Time Control**: Display for specific time ranges or entire video duration
-
-#### **Text** Resource
--   `Add String`: Burn a text overlay onto the video.
--   `Add Subtitle`: Add subtitles from an `.srt` file.
-
-#### **Font** Resource
--   `List`: Get a list of all available system and user-uploaded fonts.
--   `Upload`: Upload a custom font file (`.ttf`, `.otf`) for use in text operations.
--   `Delete`: Remove a previously uploaded user font.
+### Font Operations
+| Operation | Description |
+|-----------|-------------|
+| **List** | Get available fonts |
+| **Upload** | Upload custom fonts (TTF, OTF) |
+| **Delete** | Remove uploaded fonts |
 
 ## Usage Examples
 
-### Working with Merge Node (New in v1.4.0)
-When using n8n's Merge node to combine multiple video inputs:
-
-1. Connect multiple video sources to a Merge node
-2. Set Merge node to "Combine All" mode
-3. In MediaFX node, set Binary Property names as `data1`, `data2`, etc. (matching Merge node output)
-4. MediaFX will automatically detect and process all merged inputs
-
-### Convert Image to Video
-Create a 10-second video at 1920x1080 from a single image.
-
+### Speed Adjustment (New!)
+Create a 2x speed video:
 ```json
 {
-  "resource": "image",
-  "operation": "imageToVideo",
-  "sourceImage": {
+  "resource": "video",
+  "operation": "speed",
+  "speedSource": {
     "source": { "sourceType": "binary", "binaryProperty": "data" }
   },
-  "duration": 10,
-  "videoSize": {
-    "width": 1920,
-    "height": 1080
-  },
-  "outputFormat": "mp4"
+  "speed": 2,
+  "adjustAudio": true,
+  "maintainPitch": false,
+  "speedOutputFormat": "mp4"
 }
 ```
 
-### Advanced Audio Mix with Fade Effects
-Mix `new_audio.mp3` into `main_video.mp4`, starting at the 15-second mark for a duration of 30 seconds, with looping and fade effects.
-
+Create slow-motion (0.5x):
 ```json
 {
-  "resource": "audio",
-  "operation": "mixAudio",
-  "mixVideoSourceType": "url",
-  "mixVideoSourceUrl": "/path/to/main_video.mp4",
-  "mixAudioSourceType": "url", 
-  "mixAudioSourceUrl": "/path/to/new_audio.mp3",
-  "videoVolume": 1.0,
-  "audioVolume": 0.5,
-  "enablePartialMix": true,
-  "startTime": 15,
-  "duration": 30,
-  "loop": true,
-  "enableFadeIn": true,
-  "fadeInDuration": 2,
-  "enableFadeOut": true,
-  "fadeOutDuration": 3
+  "resource": "video",
+  "operation": "speed",
+  "speed": 0.5,
+  "adjustAudio": true
 }
 ```
 
-### Add Text Overlay with Smart Positioning
-Add text to a video using alignment presets and custom styling.
-
+### Add Subtitles (Fixed!)
+Works correctly with slideshow/image-sequence videos:
 ```json
 {
   "resource": "subtitle",
-  "operation": "addText",
-  "source": { "source": { "sourceType": "binary", "binaryProperty": "data" } },
-  "textOptions": {
-    "text": "Hello, Custom Fonts!",
-    "fontKey": "my-custom-font",
-    "size": 48,
-    "color": "yellow",
-    "positionType": "alignment",
-    "horizontalAlign": "center",
-    "verticalAlign": "bottom",
-    "paddingX": 20,
-    "paddingY": 50,
-    "startTime": 0,
-    "endTime": 10
-  }
-}
-```
-
-### Advanced Watermark Stamping
-Apply a watermark for a specific time range.
-
-```json
-{
-  "resource": "image",
-  "operation": "stampImage",
-  "sourceVideo": {
-    "source": { "sourceType": "binary", "binaryProperty": "data" }
+  "operation": "addSubtitle",
+  "source": {
+    "source": { "sourceType": "binary", "binaryProperty": "video" }
   },
-  "stampImage": {
-    "source": { "sourceType": "binary", "binaryProperty": "watermark" }
+  "subtitleFileSource": {
+    "source": { "sourceType": "binary", "binaryProperty": "srt" }
   },
-  "width": 200,
-  "height": -1,
-  "x": "(main_w-overlay_w)-20",
-  "y": "20",
-  "rotation": 15,
-  "opacity": 0.8,
-  "enableTimeControl": true,
-  "startTime": 5,
-  "endTime": 25
-}
-```
-
-### Separate Audio from Video (New in v1.4.1)
-Split a video into a muted video and extracted audio track.
-
-```json
-{
-  "resource": "video",
-  "operation": "separateAudio",
-  "separateSource": {
-    "source": { "sourceType": "binary", "binaryProperty": "data" }
-  },
-  "separateVideoFormat": "mp4",
-  "separateAudioFormat": "mp3",
-  "separateAudioCodec": "copy",
-  "separateAudioBitrate": "192k",
-  "separateVideoFieldName": "video",
-  "separateAudioFieldName": "audio"
-}
-```
-
-**Output**: Returns a single item with two binary properties:
-- `video`: The muted video file (no audio track)
-- `audio`: The extracted audio file
-
-### Overlay Video (New in v1.5.0)
-Overlay a video on top of another video with flexible positioning.
-
-**Using Alignment Presets (Center with 50% width):**
-```json
-{
-  "resource": "video",
-  "operation": "overlayVideo",
-  "overlayMainSource": {
-    "source": { "sourceType": "binary", "binaryProperty": "data1" }
-  },
-  "overlaySource": {
-    "source": { "sourceType": "binary", "binaryProperty": "data2" }
-  },
-  "overlayPositionMode": "alignment",
-  "overlayHorizontalAlign": "center",
-  "overlayVerticalAlign": "middle",
-  "overlaySizeMode": "percentage",
-  "overlayWidthPercent": 50,
-  "overlayHeightMode": "auto",
-  "overlayOpacity": 0.8,
-  "overlayAudioHandling": "main",
-  "overlayOutputFormat": "mp4"
-}
-```
-
-**Using Custom Coordinates (Bottom-right corner):**
-```json
-{
-  "resource": "video",
-  "operation": "overlayVideo",
-  "overlayMainSource": {
-    "source": { "sourceType": "binary", "binaryProperty": "data1" }
-  },
-  "overlaySource": {
-    "source": { "sourceType": "binary", "binaryProperty": "data2" }
-  },
-  "overlayPositionMode": "coordinates",
-  "overlayX": "main_w-overlay_w-20",
-  "overlayY": "main_h-overlay_h-20",
-  "overlaySizeMode": "pixels",
-  "overlayWidthPixels": 320,
-  "overlayHeightPixels": -1,
-  "overlayEnableTimeControl": true,
-  "overlayStartTime": 5,
-  "overlayEndTime": 30,
-  "overlayAudioHandling": "mix",
-  "overlayMainVolume": 1.0,
-  "overlayOverlayVolume": 0.3
+  "fontKey": "noto-sans-kr",
+  "size": 48,
+  "color": "white",
+  "horizontalAlign": "center",
+  "verticalAlign": "bottom"
 }
 ```
 
 ## Requirements
 
--   n8n: Version 1.0 or higher recommended.
--   Node.js: Version 16+.
--   FFmpeg: Automatically downloaded and included via `@ffmpeg-installer/ffmpeg`, with `ffmpeg-static` as fallback. Manual installation may be required on some systems.
+- **n8n**: Version 1.0+
+- **Node.js**: Version 16+
+- **FFmpeg**: Auto-installed via `@ffmpeg-installer/ffmpeg`
 
-### FFmpeg Installation
-
-The node automatically downloads FFmpeg via the `@ffmpeg-installer/ffmpeg` package (with `ffmpeg-static` as fallback), but if you encounter FFmpeg-related errors on your server, you may need to install FFmpeg manually:
+### Manual FFmpeg Installation (if needed)
 
 **Ubuntu/Debian:**
 ```bash
 sudo apt update && sudo apt install ffmpeg
 ```
 
-**CentOS/RHEL/Rocky Linux:**
-```bash
-sudo yum install epel-release && sudo yum install ffmpeg
-# or for newer versions:
-sudo dnf install ffmpeg
-```
-
-**Alpine Linux (Docker):**
+**Alpine (Docker):**
 ```bash
 apk add ffmpeg
 ```
@@ -330,41 +158,17 @@ apk add ffmpeg
 brew install ffmpeg
 ```
 
-## Development
+## Credits
 
-If you wish to contribute to this node:
+This is an enhanced fork of [n8n-nodes-mediafx](https://github.com/dandacompany/n8n-nodes-mediafx) by [Dante](https://github.com/dandacompany).
 
-1. Clone this repository.
-2. Install dependencies with `npm install`.
-3. Build the node with `npm run build`.
-4. For development, use `npm run dev` to watch for changes and automatically rebuild.
-5. [Link your local repository to your n8n nodes directory.](https://docs.n8n.io/integrations/creating-nodes/test-node/#linking-the-node)
+**Original Author**: Dante (datapod.k@gmail.com)  
+**Fork Maintainer**: Lee-Jisoo (mihisasi@naver.com)
 
 ## Repository
 
-**GitHub**: [https://github.com/dandacompany/n8n-nodes-mediafx](https://github.com/dandacompany/n8n-nodes-mediafx)
-
-## Developer
-
-**Developer**: Dante  
-**Email**: datapod.k@gmail.com  
-**YouTube Channel**: [단테랩스 (DanteLabs)](https://www.youtube.com/@단테랩스)
-
-## Contributing
-
-We welcome contributions! Please feel free to submit issues, feature requests, or pull requests on our [GitHub repository](https://github.com/dandacompany/n8n-nodes-mediafx).
-
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/dandacompany/n8n-nodes-mediafx/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/dandacompany/n8n-nodes-mediafx/discussions)
-- **YouTube**: Check out tutorials and demos on [단테랩스](https://www.youtube.com/@단테랩스)
-
-## Support the Project
-
-If you find this node useful, consider buying me a coffee!
-
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support-yellow?style=for-the-badge&logo=buy-me-a-coffee)](https://buymeacoffee.com/dante.labs)
+- **This Fork**: [https://github.com/lee-jisoo/n8n-nodes-mediafx](https://github.com/lee-jisoo/n8n-nodes-mediafx)
+- **Original**: [https://github.com/dandacompany/n8n-nodes-mediafx](https://github.com/dandacompany/n8n-nodes-mediafx)
 
 ## License
 

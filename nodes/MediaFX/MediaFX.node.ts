@@ -28,6 +28,7 @@ import {
 	executeMixAudio,
 	executeOverlayVideo,
 	executeSeparateAudio,
+	executeSpeed,
 	executeStampImage,
 	executeMultiVideoTransition,
 	executeSingleVideoFade,
@@ -250,6 +251,22 @@ export class MediaFX implements INodeType {
 							const outputFormat = this.getNodeParameter('videoOutputFormat', i, 'mp4') as string;
 
 							outputPath = await executeTrim.call(this, paths[0], startTime, endTime, outputFormat, i);
+							break;
+						}
+
+						case 'speed': {
+							const sourceParam = this.getNodeParameter('speedSource', i, {}) as {
+								source: { sourceType: string; value: string; binaryProperty?: string };
+							};
+							const { paths, cleanup: c } = await resolveInputs(this, i, [sourceParam.source]);
+							cleanup = c;
+
+							const speed = this.getNodeParameter('speed', i, 1) as number;
+							const adjustAudio = this.getNodeParameter('adjustAudio', i, true) as boolean;
+							const maintainPitch = this.getNodeParameter('maintainPitch', i, false) as boolean;
+							const outputFormat = this.getNodeParameter('speedOutputFormat', i, 'mp4') as string;
+
+							outputPath = await executeSpeed.call(this, paths[0], speed, adjustAudio, maintainPitch, outputFormat, i);
 							break;
 						}
 
