@@ -268,6 +268,8 @@ export async function executeAddSubtitle(
 		finalSubtitlePath = tempAssFile;
 		
 		// Debug: log ASS content for troubleshooting
+		console.log('[MediaFX] enableBackground:', enableBackground, 'type:', typeof enableBackground);
+		console.log('[MediaFX] style.enableBackground raw:', style.enableBackground);
 		console.log('[MediaFX] Generated ASS file:', tempAssFile);
 		console.log('[MediaFX] ASS Style line:', assContent.split('\n').find(line => line.startsWith('Style:')));
 	}
