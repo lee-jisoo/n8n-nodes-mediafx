@@ -2,7 +2,7 @@ import { IExecuteFunctions, NodeOperationError, IDataObject } from 'n8n-workflow
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import ffmpeg = require('fluent-ffmpeg');
-import { getTempFile, runFfmpeg, getAvailableFonts } from '../utils';
+import { getTempFile, runFfmpeg, getAvailableFonts, getVideoStreamInfo } from '../utils';
 
 /**
  * Escape special characters in file path for FFmpeg subtitles filter.
@@ -137,15 +137,43 @@ export async function executeAddSubtitle(
 	const positionType = style.positionType || 'alignment';
 	let horizontalAlign = 'center';
 	let verticalAlign = 'bottom';
-	let marginV = 20;
+	let paddingY = 20;
 
 	if (positionType === 'alignment') {
 		horizontalAlign = (style.horizontalAlign as string) || 'center';
 		verticalAlign = (style.verticalAlign as string) || 'bottom';
-		marginV = (style.paddingY as number) ?? 20;
+		paddingY = (style.paddingY as number) ?? 20;
 	}
 
 	const alignment = getASSAlignment(horizontalAlign, verticalAlign);
+	
+	// Get video height for accurate MarginV calculation
+	let videoHeight = 1080; // default fallback
+	try {
+		const videoInfo = await getVideoStreamInfo(video);
+		if (videoInfo && videoInfo.height) {
+			videoHeight = videoInfo.height;
+		}
+	} catch (e) {
+		// Use default if ffprobe fails
+		console.warn('Could not get video height, using default 1080');
+	}
+	
+	// Calculate MarginV based on vertical alignment and video height
+	// ASS MarginV is the distance from the alignment edge
+	// For middle alignment, we calculate the margin to center the subtitle
+	let marginV = paddingY;
+	if (verticalAlign === 'middle') {
+		// For middle alignment (4,5,6), MarginV pushes from bottom
+		// To center: marginV = (videoHeight / 2) - fontSize - some_offset
+		// Simplified: use ~37% of video height as margin from bottom
+		marginV = Math.round(videoHeight * 0.37);
+	} else if (verticalAlign === 'top') {
+		marginV = paddingY;
+	} else {
+		// bottom
+		marginV = paddingY;
+	}
 
 	// 3. Convert colors to ASS format
 	const primaryColorASS = colorToASS(fontColor, 1);
