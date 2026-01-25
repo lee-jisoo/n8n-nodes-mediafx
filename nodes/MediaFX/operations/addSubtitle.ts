@@ -6,78 +6,131 @@ import { getTempFile, runFfmpeg, getAvailableFonts } from '../utils';
 
 /**
  * Escape special characters in file path for FFmpeg subtitles filter.
- * FFmpeg subtitles filter requires escaping: \ : [ ] ' 
  */
 function escapeSubtitlePath(filePath: string): string {
 	return filePath
-		.replace(/\\/g, '\\\\\\\\')  // Backslash (Windows paths)
-		.replace(/:/g, '\\:')         // Colon
-		.replace(/\[/g, '\\[')        // Square brackets
+		.replace(/\\/g, '\\\\\\\\')
+		.replace(/:/g, '\\:')
+		.replace(/\[/g, '\\[')
 		.replace(/\]/g, '\\]')
-		.replace(/'/g, "\\'");        // Single quote
+		.replace(/'/g, "\\'");
 }
 
 /**
- * Build ASS/SSA style string for subtitles filter force_style option.
- * This converts our style options to FFmpeg's force_style format.
+ * Convert color to ASS format (&HAABBGGRR)
+ * @param color - CSS color (hex #RRGGBB or named color)
+ * @param opacity - Opacity 0-1 (0=transparent, 1=solid)
  */
-function buildForceStyle(
+function colorToASS(color: string, opacity: number = 1): string {
+	let r = 'FF', g = 'FF', b = 'FF';
+	
+	if (color && color.startsWith('#') && color.length === 7) {
+		r = color.substring(1, 3);
+		g = color.substring(3, 5);
+		b = color.substring(5, 7);
+	} else {
+		const namedColors: Record<string, string> = {
+			white: 'FFFFFF',
+			black: '000000',
+			red: 'FF0000',
+			green: '00FF00',
+			blue: '0000FF',
+			yellow: 'FFFF00',
+			cyan: '00FFFF',
+			magenta: 'FF00FF',
+			orange: 'FFA500',
+		};
+		const hex = namedColors[color.toLowerCase()] || 'FFFFFF';
+		r = hex.substring(0, 2);
+		g = hex.substring(2, 4);
+		b = hex.substring(4, 6);
+	}
+	
+	// ASS format: &HAABBGGRR (AA = alpha, 00=solid, FF=transparent)
+	const alpha = Math.round((1 - opacity) * 255).toString(16).padStart(2, '0').toUpperCase();
+	return `&H${alpha}${b}${g}${r}`.toUpperCase();
+}
+
+/**
+ * Get ASS alignment number (numpad style)
+ */
+function getASSAlignment(horizontalAlign: string, verticalAlign: string): number {
+	const alignMap: Record<string, Record<string, number>> = {
+		top: { left: 7, center: 8, right: 9 },
+		middle: { left: 4, center: 5, right: 6 },
+		bottom: { left: 1, center: 2, right: 3 },
+	};
+	return alignMap[verticalAlign]?.[horizontalAlign] ?? 2;
+}
+
+/**
+ * Parse SRT file and convert to ASS format
+ */
+function convertSRTtoASS(
+	srtContent: string,
 	fontName: string,
 	fontSize: number,
-	fontColor: string,
-	horizontalAlign: string,
-	verticalAlign: string,
+	primaryColor: string,
+	outlineColor: string,
+	outlineWidth: number,
+	backgroundColor: string,
+	backgroundOpacity: number,
+	enableBackground: boolean,
+	alignment: number,
 	marginV: number,
 ): string {
-	// Convert color from CSS format to ASS format (AABBGGRR)
-	// Default white = &H00FFFFFF
-	let assColor = '&H00FFFFFF';
-	if (fontColor && fontColor.startsWith('#') && fontColor.length === 7) {
-		// Convert #RRGGBB to &H00BBGGRR (ASS uses BGR order with alpha prefix)
-		const r = fontColor.substring(1, 3);
-		const g = fontColor.substring(3, 5);
-		const b = fontColor.substring(5, 7);
-		assColor = `&H00${b}${g}${r}`.toUpperCase();
-	} else if (fontColor === 'white') {
-		assColor = '&H00FFFFFF';
-	} else if (fontColor === 'black') {
-		assColor = '&H00000000';
-	} else if (fontColor === 'yellow') {
-		assColor = '&H0000FFFF';
-	} else if (fontColor === 'red') {
-		assColor = '&H000000FF';
+	// ASS Header
+	const borderStyle = enableBackground ? 4 : 1; // 4=box, 1=outline+shadow
+	const backColor = colorToASS(backgroundColor, backgroundOpacity);
+	
+	const assHeader = `[Script Info]
+Title: Converted from SRT
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+WrapStyle: 0
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,${fontName},${fontSize},${primaryColor},${primaryColor},${outlineColor},${backColor},0,0,0,0,100,100,0,0,${borderStyle},${outlineWidth},0,${alignment},20,20,${marginV},1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+`;
+
+	// Parse SRT content
+	const srtBlocks = srtContent.trim().split(/\n\s*\n/);
+	const dialogueLines: string[] = [];
+
+	for (const block of srtBlocks) {
+		const lines = block.trim().split('\n');
+		if (lines.length < 3) continue;
+
+		// Parse timestamp line (format: 00:00:00,000 --> 00:00:00,000)
+		const timestampLine = lines[1];
+		const timestampMatch = timestampLine.match(
+			/(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[,.](\d{3})/
+		);
+		if (!timestampMatch) continue;
+
+		const startTime = `${timestampMatch[1]}:${timestampMatch[2]}:${timestampMatch[3]}.${timestampMatch[4].substring(0, 2)}`;
+		const endTime = `${timestampMatch[5]}:${timestampMatch[6]}:${timestampMatch[7]}.${timestampMatch[8].substring(0, 2)}`;
+
+		// Get text (lines 3+)
+		const text = lines.slice(2).join('\\N').replace(/\r/g, '');
+
+		dialogueLines.push(`Dialogue: 0,${startTime},${endTime},Default,,0,0,0,,${text}`);
 	}
 
-	// Alignment mapping for ASS (numpad style)
-	// 1=bottom-left, 2=bottom-center, 3=bottom-right
-	// 4=middle-left, 5=middle-center, 6=middle-right
-	// 7=top-left, 8=top-center, 9=top-right
-	let alignment = 2; // default: bottom-center
-	if (verticalAlign === 'top') {
-		alignment = horizontalAlign === 'left' ? 7 : horizontalAlign === 'right' ? 9 : 8;
-	} else if (verticalAlign === 'middle') {
-		alignment = horizontalAlign === 'left' ? 4 : horizontalAlign === 'right' ? 6 : 5;
-	} else {
-		// bottom (default)
-		alignment = horizontalAlign === 'left' ? 1 : horizontalAlign === 'right' ? 3 : 2;
-	}
+	return assHeader + dialogueLines.join('\n');
+}
 
-	const styleParams = [
-		`FontName=${fontName}`,
-		`FontSize=${fontSize}`,
-		`PrimaryColour=${assColor}`,
-		`OutlineColour=&H00000000`,  // Black outline
-		`BackColour=&H80000000`,     // Semi-transparent black background
-		`Bold=0`,
-		`Italic=0`,
-		`BorderStyle=4`,             // Box style (background box)
-		`Outline=1`,
-		`Shadow=0`,
-		`Alignment=${alignment}`,
-		`MarginV=${marginV}`,
-	];
-
-	return styleParams.join(',');
+/**
+ * Check if file is ASS/SSA format
+ */
+function isASSFile(filePath: string): boolean {
+	const ext = path.extname(filePath).toLowerCase();
+	return ext === '.ass' || ext === '.ssa';
 }
 
 export async function executeAddSubtitle(
@@ -89,7 +142,7 @@ export async function executeAddSubtitle(
 ): Promise<string> {
 	const outputPath = getTempFile(path.extname(video));
 
-	// 1. Get Font from fontKey
+	// 1. Get Font
 	const allFonts = getAvailableFonts();
 	const fontKey = (style.fontKey as string) || 'noto-sans-kr';
 	const font = allFonts[fontKey] as IDataObject | undefined;
@@ -105,8 +158,13 @@ export async function executeAddSubtitle(
 	const fontName = (font.name as string) || 'Sans';
 	const fontSize = (style.size as number) || 48;
 	const fontColor = (style.color as string) || 'white';
+	const outlineWidth = (style.outlineWidth as number) ?? 1;
+	const outlineColor = (style.outlineColor as string) || 'black';
+	const enableBackground = (style.enableBackground as boolean) ?? false;
+	const backgroundColor = (style.backgroundColor as string) || 'black';
+	const backgroundOpacity = (style.backgroundOpacity as number) ?? 0.5;
 
-	// 2. Handle position based on position type
+	// 2. Get alignment
 	const positionType = style.positionType || 'alignment';
 	let horizontalAlign = 'center';
 	let verticalAlign = 'bottom';
@@ -115,25 +173,43 @@ export async function executeAddSubtitle(
 	if (positionType === 'alignment') {
 		horizontalAlign = (style.horizontalAlign as string) || 'center';
 		verticalAlign = (style.verticalAlign as string) || 'bottom';
-		marginV = (style.paddingY as number) ?? (style.padding as number) ?? 20;
+		marginV = (style.paddingY as number) ?? 20;
 	}
 
-	// 3. Build force_style for subtitles filter
-	const forceStyle = buildForceStyle(
-		fontName,
-		fontSize,
-		fontColor,
-		horizontalAlign,
-		verticalAlign,
-		marginV,
-	);
+	const alignment = getASSAlignment(horizontalAlign, verticalAlign);
 
-	// 4. Escape subtitle file path for FFmpeg
-	const escapedSubtitlePath = escapeSubtitlePath(subtitleFile);
+	// 3. Prepare subtitle file
+	let finalSubtitlePath = subtitleFile;
+	let tempAssFile: string | null = null;
 
-	// 5. Build subtitles filter (much more reliable than drawtext chain)
-	// Using subtitles filter processes the entire SRT file at once
-	const subtitlesFilter = `subtitles='${escapedSubtitlePath}':force_style='${forceStyle}'`;
+	if (isASSFile(subtitleFile)) {
+		// ASS file: use directly (ignore style options)
+		finalSubtitlePath = subtitleFile;
+	} else {
+		// SRT file: convert to ASS with styles
+		const srtContent = await fs.readFile(subtitleFile, 'utf-8');
+		const assContent = convertSRTtoASS(
+			srtContent,
+			fontName,
+			fontSize,
+			colorToASS(fontColor, 1),
+			colorToASS(outlineColor, 1),
+			outlineWidth,
+			backgroundColor,
+			backgroundOpacity,
+			enableBackground,
+			alignment,
+			marginV,
+		);
+
+		tempAssFile = getTempFile('.ass');
+		await fs.writeFile(tempAssFile, assContent, 'utf-8');
+		finalSubtitlePath = tempAssFile;
+	}
+
+	// 4. Build FFmpeg command
+	const escapedPath = escapeSubtitlePath(finalSubtitlePath);
+	const subtitlesFilter = `subtitles='${escapedPath}'`;
 
 	const command = ffmpeg(video)
 		.videoFilters([subtitlesFilter])
@@ -144,12 +220,16 @@ export async function executeAddSubtitle(
 		await runFfmpeg(command);
 		return outputPath;
 	} catch (error) {
-		// Clean up output file if creation failed
 		await fs.remove(outputPath).catch(() => {});
 		throw new NodeOperationError(
 			this.getNode(),
 			`Error adding subtitles to video. FFmpeg error: ${(error as Error).message}`,
 			{ itemIndex },
 		);
+	} finally {
+		// Clean up temp ASS file
+		if (tempAssFile) {
+			await fs.remove(tempAssFile).catch(() => {});
+		}
 	}
-} 
+}

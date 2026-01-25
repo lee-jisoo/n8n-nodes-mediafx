@@ -181,6 +181,61 @@ export const subtitleProperties: INodeProperties[] = [
 		},
 		description: 'Width of the text border/outline',
 	},
+	{
+		displayName: 'Outline Color',
+		name: 'outlineColor',
+		type: 'string',
+		default: 'black',
+		displayOptions: {
+			show: {
+				resource: ['subtitle'],
+			},
+		},
+		description: 'Color of the text outline (e.g., black, #000000)',
+	},
+	{
+		displayName: 'Enable Background Box',
+		name: 'enableBackground',
+		type: 'boolean',
+		default: false,
+		displayOptions: {
+			show: {
+				resource: ['subtitle'],
+			},
+		},
+		description: 'Whether to show a background box behind the text',
+	},
+	{
+		displayName: 'Background Color',
+		name: 'backgroundColor',
+		type: 'string',
+		default: 'black',
+		displayOptions: {
+			show: {
+				resource: ['subtitle'],
+				enableBackground: [true],
+			},
+		},
+		description: 'Color of the background box (e.g., black, #000000)',
+	},
+	{
+		displayName: 'Background Opacity',
+		name: 'backgroundOpacity',
+		type: 'number',
+		typeOptions: {
+			minValue: 0,
+			maxValue: 1,
+			numberStepSize: 0.1,
+		},
+		default: 0.5,
+		displayOptions: {
+			show: {
+				resource: ['subtitle'],
+				enableBackground: [true],
+			},
+		},
+		description: 'Opacity of the background box (0 = transparent, 1 = solid)',
+	},
 
 	// ===================
 	// POSITION OPTIONS
