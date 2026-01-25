@@ -2,7 +2,7 @@ import { IExecuteFunctions, NodeOperationError, IDataObject } from 'n8n-workflow
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import ffmpeg = require('fluent-ffmpeg');
-import { getTempFile, runFfmpeg, getAvailableFonts, getVideoStreamInfo } from '../utils';
+import { getTempFile, runFfmpeg, getAvailableFonts } from '../utils';
 
 /**
  * Escape special characters in file path for FFmpeg subtitles filter.
@@ -82,7 +82,10 @@ function buildForceStyle(
 	alignment: number,
 	marginV: number,
 ): string {
-	const borderStyle = enableBackground ? 4 : 1;
+	// BorderStyle: 1=outline+shadow, 3=opaque box, 4=translucent box (limited support)
+	// For background box, use BorderStyle=3 with BackColour
+	const borderStyle = enableBackground ? 3 : 1;
+	const shadow = enableBackground ? 4 : 0; // Add shadow for box effect
 	
 	const styleParams = [
 		`FontName=${fontName}`,
@@ -93,8 +96,8 @@ function buildForceStyle(
 		`Bold=0`,
 		`Italic=0`,
 		`BorderStyle=${borderStyle}`,
-		`Outline=${outlineWidth}`,
-		`Shadow=0`,
+		`Outline=${enableBackground ? 0 : outlineWidth}`,
+		`Shadow=${shadow}`,
 		`Alignment=${alignment}`,
 		`MarginV=${marginV}`,
 	];
@@ -147,27 +150,17 @@ export async function executeAddSubtitle(
 
 	const alignment = getASSAlignment(horizontalAlign, verticalAlign);
 	
-	// Get video height for accurate MarginV calculation
-	let videoHeight = 1080; // default fallback
-	try {
-		const videoInfo = await getVideoStreamInfo(video);
-		if (videoInfo && videoInfo.height) {
-			videoHeight = videoInfo.height;
-		}
-	} catch (e) {
-		// Use default if ffprobe fails
-		console.warn('Could not get video height, using default 1080');
-	}
-	
-	// Calculate MarginV based on vertical alignment and video height
-	// ASS MarginV is the distance from the alignment edge
-	// For middle alignment, we calculate the margin to center the subtitle
+	// Calculate MarginV based on vertical alignment
+	// For SRT files, middle alignment (4,5,6) doesn't work reliably with force_style
+	// So we use bottom alignment (2) with large MarginV to simulate middle position
 	let marginV = paddingY;
+	let effectiveAlignment = alignment;
+	
 	if (verticalAlign === 'middle') {
-		// For middle alignment (4,5,6), MarginV pushes from bottom
-		// To center: marginV = (videoHeight / 2) - fontSize - some_offset
-		// Simplified: use ~37% of video height as margin from bottom
-		marginV = Math.round(videoHeight * 0.37);
+		// Use bottom-center alignment but push up with MarginV
+		// For middle position, we want subtitle at ~45% from bottom
+		effectiveAlignment = horizontalAlign === 'left' ? 1 : horizontalAlign === 'right' ? 3 : 2;
+		marginV = 350; // Works for most video heights (720p-1080p)
 	} else if (verticalAlign === 'top') {
 		marginV = paddingY;
 	} else {
@@ -198,7 +191,7 @@ export async function executeAddSubtitle(
 			outlineWidth,
 			backColorASS,
 			enableBackground,
-			alignment,
+			effectiveAlignment,
 			marginV,
 		);
 		subtitlesFilter = `subtitles='${escapedPath}':force_style='${forceStyle}'`;
