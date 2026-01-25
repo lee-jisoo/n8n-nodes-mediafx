@@ -18,8 +18,6 @@ function escapeSubtitlePath(filePath: string): string {
 
 /**
  * Convert color to ASS format (&HAABBGGRR)
- * @param color - CSS color (hex #RRGGBB or named color)
- * @param opacity - Opacity 0-1 (0=transparent, 1=solid)
  */
 function colorToASS(color: string, opacity: number = 1): string {
 	let r = 'FF', g = 'FF', b = 'FF';
@@ -40,13 +38,12 @@ function colorToASS(color: string, opacity: number = 1): string {
 			magenta: 'FF00FF',
 			orange: 'FFA500',
 		};
-		const hex = namedColors[color.toLowerCase()] || 'FFFFFF';
+		const hex = namedColors[(color || 'white').toLowerCase()] || 'FFFFFF';
 		r = hex.substring(0, 2);
 		g = hex.substring(2, 4);
 		b = hex.substring(4, 6);
 	}
 	
-	// ASS format: &HAABBGGRR (AA = alpha, 00=solid, FF=transparent)
 	const alpha = Math.round((1 - opacity) * 255).toString(16).padStart(2, '0').toUpperCase();
 	return `&H${alpha}${b}${g}${r}`.toUpperCase();
 }
@@ -64,73 +61,45 @@ function getASSAlignment(horizontalAlign: string, verticalAlign: string): number
 }
 
 /**
- * Parse SRT file and convert to ASS format
- */
-function convertSRTtoASS(
-	srtContent: string,
-	fontName: string,
-	fontSize: number,
-	primaryColor: string,
-	outlineColor: string,
-	outlineWidth: number,
-	backgroundColor: string,
-	backgroundOpacity: number,
-	enableBackground: boolean,
-	alignment: number,
-	marginV: number,
-): string {
-	// ASS Header
-	const borderStyle = enableBackground ? 4 : 1; // 4=box, 1=outline+shadow
-	const backColor = colorToASS(backgroundColor, backgroundOpacity);
-	
-	const assHeader = `[Script Info]
-Title: Converted from SRT
-ScriptType: v4.00+
-PlayResX: 1920
-PlayResY: 1080
-WrapStyle: 0
-
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,${fontName},${fontSize},${primaryColor},${primaryColor},${outlineColor},${backColor},0,0,0,0,100,100,0,0,${borderStyle},${outlineWidth},0,${alignment},20,20,${marginV},1
-
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-`;
-
-	// Parse SRT content
-	const srtBlocks = srtContent.trim().split(/\n\s*\n/);
-	const dialogueLines: string[] = [];
-
-	for (const block of srtBlocks) {
-		const lines = block.trim().split('\n');
-		if (lines.length < 3) continue;
-
-		// Parse timestamp line (format: 00:00:00,000 --> 00:00:00,000)
-		const timestampLine = lines[1];
-		const timestampMatch = timestampLine.match(
-			/(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[,.](\d{3})/
-		);
-		if (!timestampMatch) continue;
-
-		const startTime = `${timestampMatch[1]}:${timestampMatch[2]}:${timestampMatch[3]}.${timestampMatch[4].substring(0, 2)}`;
-		const endTime = `${timestampMatch[5]}:${timestampMatch[6]}:${timestampMatch[7]}.${timestampMatch[8].substring(0, 2)}`;
-
-		// Get text (lines 3+)
-		const text = lines.slice(2).join('\\N').replace(/\r/g, '');
-
-		dialogueLines.push(`Dialogue: 0,${startTime},${endTime},Default,,0,0,0,,${text}`);
-	}
-
-	return assHeader + dialogueLines.join('\n');
-}
-
-/**
  * Check if file is ASS/SSA format
  */
 function isASSFile(filePath: string): boolean {
 	const ext = path.extname(filePath).toLowerCase();
 	return ext === '.ass' || ext === '.ssa';
+}
+
+/**
+ * Build force_style string for subtitles filter
+ */
+function buildForceStyle(
+	fontName: string,
+	fontSize: number,
+	primaryColor: string,
+	outlineColor: string,
+	outlineWidth: number,
+	backColor: string,
+	enableBackground: boolean,
+	alignment: number,
+	marginV: number,
+): string {
+	const borderStyle = enableBackground ? 4 : 1;
+	
+	const styleParams = [
+		`FontName=${fontName}`,
+		`FontSize=${fontSize}`,
+		`PrimaryColour=${primaryColor}`,
+		`OutlineColour=${outlineColor}`,
+		`BackColour=${backColor}`,
+		`Bold=0`,
+		`Italic=0`,
+		`BorderStyle=${borderStyle}`,
+		`Outline=${outlineWidth}`,
+		`Shadow=0`,
+		`Alignment=${alignment}`,
+		`MarginV=${marginV}`,
+	];
+
+	return styleParams.join(',');
 }
 
 export async function executeAddSubtitle(
@@ -178,38 +147,34 @@ export async function executeAddSubtitle(
 
 	const alignment = getASSAlignment(horizontalAlign, verticalAlign);
 
-	// 3. Prepare subtitle file
-	let finalSubtitlePath = subtitleFile;
-	let tempAssFile: string | null = null;
+	// 3. Convert colors to ASS format
+	const primaryColorASS = colorToASS(fontColor, 1);
+	const outlineColorASS = colorToASS(outlineColor, 1);
+	const backColorASS = colorToASS(backgroundColor, backgroundOpacity);
 
+	// 4. Build FFmpeg command
+	const escapedPath = escapeSubtitlePath(subtitleFile);
+	
+	let subtitlesFilter: string;
+	
 	if (isASSFile(subtitleFile)) {
-		// ASS file: use directly (ignore style options)
-		finalSubtitlePath = subtitleFile;
+		// ASS/SSA file: use directly without force_style
+		subtitlesFilter = `subtitles='${escapedPath}'`;
 	} else {
-		// SRT file: convert to ASS with styles
-		const srtContent = await fs.readFile(subtitleFile, 'utf-8');
-		const assContent = convertSRTtoASS(
-			srtContent,
+		// SRT file: apply force_style
+		const forceStyle = buildForceStyle(
 			fontName,
 			fontSize,
-			colorToASS(fontColor, 1),
-			colorToASS(outlineColor, 1),
+			primaryColorASS,
+			outlineColorASS,
 			outlineWidth,
-			backgroundColor,
-			backgroundOpacity,
+			backColorASS,
 			enableBackground,
 			alignment,
 			marginV,
 		);
-
-		tempAssFile = getTempFile('.ass');
-		await fs.writeFile(tempAssFile, assContent, 'utf-8');
-		finalSubtitlePath = tempAssFile;
+		subtitlesFilter = `subtitles='${escapedPath}':force_style='${forceStyle}'`;
 	}
-
-	// 4. Build FFmpeg command
-	const escapedPath = escapeSubtitlePath(finalSubtitlePath);
-	const subtitlesFilter = `subtitles='${escapedPath}'`;
 
 	const command = ffmpeg(video)
 		.videoFilters([subtitlesFilter])
@@ -226,10 +191,5 @@ export async function executeAddSubtitle(
 			`Error adding subtitles to video. FFmpeg error: ${(error as Error).message}`,
 			{ itemIndex },
 		);
-	} finally {
-		// Clean up temp ASS file
-		if (tempAssFile) {
-			await fs.remove(tempAssFile).catch(() => {});
-		}
 	}
 }
