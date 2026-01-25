@@ -91,20 +91,21 @@ function convertSRTtoASS(
 	videoWidth: number,
 	videoHeight: number,
 ): string {
-	// BorderStyle=3 with large Outline creates a background box effect
-	// OutlineColour is used as the box color when BorderStyle=3
+	// BorderStyle=3 enables opaque box mode where BackColour determines the box color
+	// IMPORTANT: When BorderStyle=3, Outline MUST be 0, otherwise it overrides BackColour transparency
+	// Shadow must be 1 for the background box to display properly
 	let borderStyle: number;
 	let outline: number;
 	let shadow: number;
 	let effectiveOutlineColor: string;
 	
 	if (enableBackground) {
-		borderStyle = 3;
-		outline = 15; // Large outline creates box effect
-		shadow = 0;
-		effectiveOutlineColor = backColor; // Use background color as outline
+		borderStyle = 3;    // Opaque box mode - BackColour becomes the box background
+		outline = 0;        // MUST be 0, non-zero overrides BackColour
+		shadow = 1;         // MUST be 1 for box to display
+		effectiveOutlineColor = backColor;
 	} else {
-		borderStyle = 1;
+		borderStyle = 1;    // Normal outline mode
 		outline = outlineWidth;
 		shadow = 0;
 		effectiveOutlineColor = outlineColor;
@@ -265,11 +266,17 @@ export async function executeAddSubtitle(
 		tempAssFile = path.join(os.tmpdir(), `mediafx_sub_${Date.now()}_${Math.random().toString(36).substring(7)}.ass`);
 		await fs.writeFile(tempAssFile, assContent, 'utf-8');
 		finalSubtitlePath = tempAssFile;
+		
+		// Debug: log ASS content for troubleshooting
+		console.log('[MediaFX] Generated ASS file:', tempAssFile);
+		console.log('[MediaFX] ASS Style line:', assContent.split('\n').find(line => line.startsWith('Style:')));
 	}
 
-	// 5. Build FFmpeg command
+	// 5. Build FFmpeg command with fontsdir for custom fonts
 	const escapedPath = escapeSubtitlePath(finalSubtitlePath);
-	const subtitlesFilter = `ass='${escapedPath}'`;
+	const fontPath = font.path as string;
+	const fontDir = escapeSubtitlePath(path.dirname(fontPath));
+	const subtitlesFilter = `ass='${escapedPath}':fontsdir='${fontDir}'`;
 
 	const command = ffmpeg(video)
 		.videoFilters([subtitlesFilter])
