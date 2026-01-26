@@ -73,6 +73,23 @@ function isASSFile(filePath: string): boolean {
 }
 
 /**
+ * Add horizontal padding to subtitle text for background box mode.
+ * ASS doesn't support native padding, so we use transparent spaces with \h (hard space).
+ * The padding is achieved by adding non-breaking spaces before and after the text.
+ */
+function addTextPadding(text: string, paddingSpaces: number): string {
+	if (paddingSpaces <= 0) return text;
+	
+	// \h is ASS hard space (non-breaking space that takes up visual space)
+	const padding = '\\h'.repeat(paddingSpaces);
+	
+	// Handle multi-line subtitles (separated by \N)
+	const lines = text.split('\\N');
+	const paddedLines = lines.map(line => `${padding}${line}${padding}`);
+	return paddedLines.join('\\N');
+}
+
+/**
  * Convert SRT content to ASS format with full styling support
  */
 function convertSRTtoASS(
@@ -130,6 +147,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 	// Parse SRT blocks
 	const blocks = srtContent.trim().split(/\r?\n\r?\n/);
 	const dialogues: string[] = [];
+	
+	// Calculate padding spaces based on font size (approximately 0.5em worth of padding)
+	// Smaller fonts need fewer spaces, larger fonts need more
+	const paddingSpaces = enableBackground ? Math.max(2, Math.round(fontSize / 24)) : 0;
 
 	for (const block of blocks) {
 		const lines = block.trim().split(/\r?\n/);
@@ -160,7 +181,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 		const endTime = `${parseInt(match[5])}:${match[6]}:${match[7]}.${match[8].substring(0, 2)}`;
 
 		// Get subtitle text (remaining lines)
-		const text = lines.slice(textStartIndex).join('\\N');
+		let text = lines.slice(textStartIndex).join('\\N');
+		
+		// Add horizontal padding when background is enabled
+		if (enableBackground && text.trim()) {
+			text = addTextPadding(text, paddingSpaces);
+		}
 
 		if (text.trim()) {
 			dialogues.push(`Dialogue: 0,${startTime},${endTime},Default,,0,0,0,,${text}`);
