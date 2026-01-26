@@ -10,6 +10,24 @@ This is a custom n8n node for comprehensive, local media processing using FFmpeg
 
 ## 🆕 What's New in This Fork
 
+### v1.6.14
+**Subtitle Enhancements (v1.6.1 ~ v1.6.14)**
+
+- **🎨 Background Box Padding**: Fixed text sticking to background box edges
+  - Added horizontal padding (`\h` hard spaces) when background is enabled
+  - Padding automatically scales with font size
+
+- **🎯 Full ASS Format Support**: Complete subtitle styling overhaul
+  - SRT to ASS auto-conversion for advanced styling
+  - Dynamic video resolution detection (supports vertical videos like 1080x1920)
+  - Proper `BorderStyle=3` implementation for opaque background boxes
+  - Fixed background color transparency with correct `Outline=0, Shadow=1` settings
+
+- **📍 Flexible Positioning**: 
+  - 9-point alignment grid (top/middle/bottom × left/center/right)
+  - Customizable padding (X/Y margins)
+  - Outline width and color options
+
 ### v1.6.0
 - **🎬 Speed Operation**: Adjust video playback speed (slow motion or fast forward)
   - Speed range: 0.25x to 4x
