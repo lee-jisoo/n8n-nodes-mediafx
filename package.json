@@ -1,6 +1,6 @@
 {
   "name": "@lee-jisoo/n8n-nodes-mediafx",
-  "version": "1.6.16",
+  "version": "1.6.17",
   "description": "N8N custom nodes for video editing and media processing (Enhanced fork with Speed control and Subtitle fixes)",
   "license": "MIT",
   "author": {
