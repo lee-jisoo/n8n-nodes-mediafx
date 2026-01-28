@@ -10,7 +10,7 @@ This is a custom n8n node for comprehensive, local media processing using FFmpeg
 
 ## 🆕 What's New in This Fork
 
-### v1.6.15
+### v1.6.19
 **New Features**
 
 - **🔍 Get Metadata (Probe)**: Extract comprehensive metadata from video/audio files

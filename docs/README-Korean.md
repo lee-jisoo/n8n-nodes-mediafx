@@ -9,7 +9,7 @@
 <!-- Optional: Add a GIF of the node in action here -->
 <!-- <p align="center"><img src="link/to/your/demo.gif" alt="MediaFX Node Demo"></p> -->
 
-## v1.6.15의 새로운 기능
+## v1.6.19의 새로운 기능
 
 -   **🔍 미디어 분석 (Probe)**: 비디오/오디오 파일에서 메타정보를 추출하는 새로운 기능
     - 포맷 정보: 파일명, 포맷, 재생시간, 파일크기, 비트레이트
