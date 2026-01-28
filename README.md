@@ -10,7 +10,7 @@ This is a custom n8n node for comprehensive, local media processing using FFmpeg
 
 ## 🆕 What's New in This Fork
 
-### v1.6.19
+### v1.6.20
 **New Features**
 
 - **🔍 Get Metadata (Probe)**: Extract comprehensive metadata from video/audio files
@@ -20,9 +20,9 @@ This is a custom n8n node for comprehensive, local media processing using FFmpeg
   - Tags: title, artist, album, and other embedded metadata
 
 - **🔤 System Font Support**: Use fonts installed on your system
-  - Scan system fonts with Font > List operation (enable "Include System Fonts")
-  - Directly specify system font path in Text/Subtitle operations
+  - System fonts automatically appear in Font dropdown (Text/Subtitle operations)
   - Supports macOS, Linux, and Windows system font directories
+  - Use Font > List with "Include System Fonts" to browse all available fonts
 
 ### v1.6.14
 **Subtitle Enhancements (v1.6.1 ~ v1.6.14)**
@@ -170,7 +170,18 @@ Example output:
 
 ### Using System Fonts (New!)
 
-First, list available system fonts:
+System fonts are automatically available in the Font dropdown. Just select any font with `(system)` suffix:
+```json
+{
+  "resource": "subtitle",
+  "operation": "addSubtitle",
+  "fontKey": "system-helvetica",
+  "size": 48,
+  "color": "white"
+}
+```
+
+To browse all system fonts, use Font > List:
 ```json
 {
   "resource": "font",
@@ -179,18 +190,6 @@ First, list available system fonts:
     "includeSystemFonts": true,
     "fontType": "system"
   }
-}
-```
-
-Add subtitles with a system font:
-```json
-{
-  "resource": "subtitle",
-  "operation": "addSubtitle",
-  "fontSource": "system",
-  "systemFontPath": "/System/Library/Fonts/Helvetica.ttc",
-  "size": 48,
-  "color": "white"
 }
 ```
 

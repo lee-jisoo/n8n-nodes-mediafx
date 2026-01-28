@@ -9,7 +9,7 @@
 <!-- Optional: Add a GIF of the node in action here -->
 <!-- <p align="center"><img src="link/to/your/demo.gif" alt="MediaFX Node Demo"></p> -->
 
-## v1.6.19의 새로운 기능
+## v1.6.20의 새로운 기능
 
 -   **🔍 미디어 분석 (Probe)**: 비디오/오디오 파일에서 메타정보를 추출하는 새로운 기능
     - 포맷 정보: 파일명, 포맷, 재생시간, 파일크기, 비트레이트
@@ -18,9 +18,9 @@
     - 태그: 제목, 아티스트, 앨범 등 파일에 포함된 메타데이터
 
 -   **🔤 시스템 폰트 지원**: 시스템에 설치된 폰트를 사용 가능
-    - 글꼴 > 목록 작업에서 "시스템 폰트 포함" 옵션으로 시스템 폰트 스캔
-    - 텍스트/자막 작업에서 시스템 폰트 경로 직접 지정 가능
+    - 시스템 폰트가 폰트 드롭다운에 자동으로 표시됨 (텍스트/자막 작업)
     - macOS, Linux, Windows의 시스템 폰트 디렉토리 지원
+    - 글꼴 > 목록에서 "시스템 폰트 포함" 옵션으로 전체 폰트 목록 확인 가능
 
 ## v1.4.2의 기능
 
@@ -170,9 +170,20 @@
 }
 ```
 
-### 시스템 폰트 사용하기 (v1.6.15 신규)
+### 시스템 폰트 사용하기 (v1.6.19 신규)
 
-먼저 시스템에 설치된 폰트 목록을 확인합니다:
+시스템 폰트는 폰트 드롭다운에서 자동으로 선택할 수 있습니다. `(system)` 접미사가 붙은 폰트를 선택하세요:
+```json
+{
+  "resource": "subtitle",
+  "operation": "addSubtitle",
+  "fontKey": "system-applegothic",
+  "size": 48,
+  "color": "white"
+}
+```
+
+전체 시스템 폰트 목록 확인하기:
 ```json
 {
   "resource": "font",
@@ -181,18 +192,6 @@
     "includeSystemFonts": true,
     "fontType": "system"
   }
-}
-```
-
-시스템 폰트로 자막 추가하기:
-```json
-{
-  "resource": "subtitle",
-  "operation": "addSubtitle",
-  "fontSource": "system",
-  "systemFontPath": "/System/Library/Fonts/AppleSDGothicNeo.ttc",
-  "size": 48,
-  "color": "white"
 }
 ```
 

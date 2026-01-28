@@ -133,23 +133,7 @@ export const subtitleProperties: INodeProperties[] = [
 	// COMMON FONT & STYLE OPTIONS
 	// ===================
 	{
-		displayName: 'Font Source',
-		name: 'fontSource',
-		type: 'options',
-		options: [
-			{ name: 'Bundled/Uploaded Fonts', value: 'bundled', description: 'Use fonts bundled with MediaFX or uploaded by user' },
-			{ name: 'System Font Path', value: 'system', description: 'Specify path to a system font file' },
-		],
-		default: 'bundled',
-		displayOptions: {
-			show: {
-				resource: ['subtitle'],
-			},
-		},
-		description: 'Choose font source type',
-	},
-	{
-		displayName: 'Font Key',
+		displayName: 'Font',
 		name: 'fontKey',
 		type: 'options',
 		typeOptions: { loadOptionsMethod: 'getFonts' },
@@ -157,24 +141,9 @@ export const subtitleProperties: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['subtitle'],
-				fontSource: ['bundled'],
 			},
 		},
-		description: 'Font to use for the text',
-	},
-	{
-		displayName: 'System Font Path',
-		name: 'systemFontPath',
-		type: 'string',
-		default: '',
-		placeholder: '/System/Library/Fonts/AppleSDGothicNeo.ttc',
-		displayOptions: {
-			show: {
-				resource: ['subtitle'],
-				fontSource: ['system'],
-			},
-		},
-		description: 'Full path to system font file (TTF, OTF, TTC). Use Font > List operation with "Include System Fonts" to find available fonts.',
+		description: 'Font to use for the text (includes bundled, user-uploaded, and system fonts)',
 	},
 	{
 		displayName: 'Font Size',

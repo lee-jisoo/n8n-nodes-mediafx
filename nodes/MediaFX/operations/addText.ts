@@ -1,7 +1,7 @@
 import { IExecuteFunctions, NodeOperationError, IDataObject } from 'n8n-workflow';
 import * as path from 'path';
 import ffmpeg = require('fluent-ffmpeg');
-import { getTempFile, runFfmpeg, getAvailableFonts, getFontByPath } from '../utils';
+import { getTempFile, runFfmpeg, getAvailableFonts } from '../utils';
 import * as fs from 'fs-extra';
 
 function getPositionFromAlignment(
@@ -51,39 +51,17 @@ export async function executeAddText(
 	options: IDataObject,
 	itemIndex: number,
 ): Promise<string> {
-	// Support both bundled and system fonts
-	const fontSource = (options.fontSource as string) || 'bundled';
-	let font: IDataObject | null = null;
+	// Get font (includes bundled, user, and system fonts)
+	const allFonts = getAvailableFonts(true);
+	const fontKey = (options.fontKey as string) || 'noto-sans-kr';
+	const font = allFonts[fontKey] as IDataObject | undefined;
 
-	if (fontSource === 'system') {
-		const systemFontPath = options.systemFontPath as string;
-		if (!systemFontPath) {
-			throw new NodeOperationError(
-				this.getNode(),
-				'System font path is required when using system fonts.',
-				{ itemIndex },
-			);
-		}
-		font = getFontByPath(systemFontPath);
-		if (!font) {
-			throw new NodeOperationError(
-				this.getNode(),
-				`System font not found at path '${systemFontPath}'. Please check the path and ensure it's a valid font file (TTF, OTF, TTC).`,
-				{ itemIndex },
-			);
-		}
-	} else {
-		const allFonts = getAvailableFonts();
-		const fontKey = (options.fontKey as string) || 'noto-sans-kr';
-		font = allFonts[fontKey] as IDataObject | undefined || null;
-
-		if (!font || !font.path) {
-			throw new NodeOperationError(
-				this.getNode(),
-				`Selected font key '${fontKey}' is not valid or its file path is missing.`,
-				{ itemIndex },
-			);
-		}
+	if (!font || !font.path) {
+		throw new NodeOperationError(
+			this.getNode(),
+			`Selected font '${fontKey}' is not valid or its file path is missing.`,
+			{ itemIndex },
+		);
 	}
 
 	const fontPath = font.path as string;

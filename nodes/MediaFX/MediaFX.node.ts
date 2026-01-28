@@ -74,10 +74,11 @@ export class MediaFX implements INodeType {
 
 	methods = {
 		loadOptions: {
-			// Load available fonts from API
+			// Load available fonts from API (including system fonts)
 			async getFonts(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
-					const allFonts = getAvailableFonts();
+					// Include system fonts in the dropdown
+					const allFonts = getAvailableFonts(true);
 					return Object.entries(allFonts).map(([key, font]: [string, any]) => ({
 						name: `${font.name || key} (${font.type})`,
 						value: key,
@@ -439,11 +440,8 @@ export class MediaFX implements INodeType {
 							};
 
 							// Collect style options from individual parameters
-							const fontSource = this.getNodeParameter('fontSource', i, 'bundled') as string;
 							const style: IDataObject = {
-								fontSource,
-								fontKey: fontSource === 'bundled' ? this.getNodeParameter('fontKey', i, 'noto-sans-kr') : undefined,
-								systemFontPath: fontSource === 'system' ? this.getNodeParameter('systemFontPath', i, '') : undefined,
+								fontKey: this.getNodeParameter('fontKey', i, 'noto-sans-kr'),
 								size: this.getNodeParameter('size', i, 48),
 								color: this.getNodeParameter('color', i, 'white'),
 								outlineWidth: this.getNodeParameter('outlineWidth', i, 1),
@@ -483,11 +481,8 @@ export class MediaFX implements INodeType {
 							const endTime = this.getNodeParameter('endTime', i, 5) as number;
 
 							// Collect style options from individual parameters
-							const textFontSource = this.getNodeParameter('fontSource', i, 'bundled') as string;
 							const textOptions: IDataObject = {
-								fontSource: textFontSource,
-								fontKey: textFontSource === 'bundled' ? this.getNodeParameter('fontKey', i, 'noto-sans-kr') : undefined,
-								systemFontPath: textFontSource === 'system' ? this.getNodeParameter('systemFontPath', i, '') : undefined,
+								fontKey: this.getNodeParameter('fontKey', i, 'noto-sans-kr'),
 								size: this.getNodeParameter('size', i, 48),
 								color: this.getNodeParameter('color', i, 'white'),
 								outlineWidth: this.getNodeParameter('outlineWidth', i, 1),

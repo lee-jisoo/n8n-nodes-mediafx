@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import * as os from 'os';
 import ffmpeg = require('fluent-ffmpeg');
-import { getTempFile, runFfmpeg, getAvailableFonts, getVideoStreamInfo, getFontByPath } from '../utils';
+import { getTempFile, runFfmpeg, getAvailableFonts, getVideoStreamInfo } from '../utils';
 
 /**
  * Escape special characters in file path for FFmpeg subtitles filter.
@@ -205,39 +205,17 @@ export async function executeAddSubtitle(
 ): Promise<string> {
 	const outputPath = getTempFile(path.extname(video));
 
-	// 1. Get Font (support both bundled and system fonts)
-	const fontSource = (style.fontSource as string) || 'bundled';
-	let font: IDataObject | null = null;
+	// 1. Get Font (includes bundled, user, and system fonts)
+	const allFonts = getAvailableFonts(true);
+	const fontKey = (style.fontKey as string) || 'noto-sans-kr';
+	const font = allFonts[fontKey] as IDataObject | undefined;
 
-	if (fontSource === 'system') {
-		const systemFontPath = style.systemFontPath as string;
-		if (!systemFontPath) {
-			throw new NodeOperationError(
-				this.getNode(),
-				'System font path is required when using system fonts.',
-				{ itemIndex },
-			);
-		}
-		font = getFontByPath(systemFontPath);
-		if (!font) {
-			throw new NodeOperationError(
-				this.getNode(),
-				`System font not found at path '${systemFontPath}'. Please check the path and ensure it's a valid font file (TTF, OTF, TTC).`,
-				{ itemIndex },
-			);
-		}
-	} else {
-		const allFonts = getAvailableFonts();
-		const fontKey = (style.fontKey as string) || 'noto-sans-kr';
-		font = allFonts[fontKey] as IDataObject | undefined || null;
-
-		if (!font || !font.path) {
-			throw new NodeOperationError(
-				this.getNode(),
-				`Selected font key '${fontKey}' is not valid or its file path is missing.`,
-				{ itemIndex },
-			);
-		}
+	if (!font || !font.path) {
+		throw new NodeOperationError(
+			this.getNode(),
+			`Selected font '${fontKey}' is not valid or its file path is missing.`,
+			{ itemIndex },
+		);
 	}
 
 	const fontName = (font.name as string) || 'Sans';
