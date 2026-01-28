@@ -24,6 +24,11 @@ export const resourceSelection: INodeProperties[] = [
 				value: 'image',
 			},
 			{
+				name: 'Probe',
+				value: 'probe',
+				description: 'Analyze media files and extract metadata information',
+			},
+			{
 				name: 'Font',
 				value: 'font',
 			},

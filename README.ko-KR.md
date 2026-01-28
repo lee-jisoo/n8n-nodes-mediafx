@@ -9,7 +9,20 @@
 <!-- Optional: Add a GIF of the node in action here -->
 <!-- <p align="center"><img src="link/to/your/demo.gif" alt="MediaFX Node Demo"></p> -->
 
-## v1.4.2의 새로운 기능
+## v1.6.15의 새로운 기능
+
+-   **🔍 미디어 분석 (Probe)**: 비디오/오디오 파일에서 메타정보를 추출하는 새로운 기능
+    - 포맷 정보: 파일명, 포맷, 재생시간, 파일크기, 비트레이트
+    - 비디오 스트림: 코덱, 해상도, 프레임레이트, 화면비율, 픽셀포맷
+    - 오디오 스트림: 코덱, 샘플레이트, 채널 수, 채널 레이아웃
+    - 태그: 제목, 아티스트, 앨범 등 파일에 포함된 메타데이터
+
+-   **🔤 시스템 폰트 지원**: 시스템에 설치된 폰트를 사용 가능
+    - 글꼴 > 목록 작업에서 "시스템 폰트 포함" 옵션으로 시스템 폰트 스캔
+    - 텍스트/자막 작업에서 시스템 폰트 경로 직접 지정 가능
+    - macOS, Linux, Windows의 시스템 폰트 디렉토리 지원
+
+## v1.4.2의 기능
 
 -   **버그 수정**: 비디오 소스가 올바르게 설정되지 않은 경우 오디오 분리 작업에서 "did not produce an output" 오류 수정
     - 소스가 누락된 경우 명확한 오류 메시지와 함께 적절한 유효성 검사 추가
@@ -104,12 +117,84 @@
 -   `문자열 추가`: 비디오에 텍스트 오버레이를 추가합니다.
 -   `자막 추가`: `.srt` 파일에서 자막을 추가합니다.
 
+#### **분석 (Probe)** 리소스
+-   `메타정보 조회`: 비디오/오디오 파일에서 포맷 정보, 스트림 정보, 태그 등 상세한 메타데이터를 추출합니다.
+
 #### **글꼴** 리소스
 -   `목록`: 사용 가능한 모든 시스템 및 사용자 업로드 글꼴 목록을 가져옵니다.
 -   `업로드`: 텍스트 작업에 사용할 사용자 지정 글꼴 파일(`.ttf`, `.otf`)을 업로드합니다.
 -   `삭제`: 이전에 업로드한 사용자 글꼴을 제거합니다.
 
 ## 사용 예제
+
+### 미디어 메타정보 조회 (v1.6.15 신규)
+비디오 또는 오디오 파일에서 메타정보를 추출합니다.
+
+```json
+{
+  "resource": "probe",
+  "operation": "getMetadata",
+  "probeSource": {
+    "source": { "sourceType": "binary", "binaryProperty": "data" }
+  }
+}
+```
+
+출력 예시:
+```json
+{
+  "success": true,
+  "operation": "getMetadata",
+  "format": {
+    "filename": "video.mp4",
+    "formatName": "mov,mp4,m4a,3gp,3g2,mj2",
+    "duration": 120.5,
+    "size": 15728640,
+    "bitRate": 1048576
+  },
+  "video": {
+    "codec": "h264",
+    "width": 1920,
+    "height": 1080,
+    "frameRate": 30,
+    "aspectRatio": "16:9"
+  },
+  "audio": {
+    "codec": "aac",
+    "sampleRate": 48000,
+    "channels": 2,
+    "channelLayout": "stereo"
+  },
+  "hasVideo": true,
+  "hasAudio": true
+}
+```
+
+### 시스템 폰트 사용하기 (v1.6.15 신규)
+
+먼저 시스템에 설치된 폰트 목록을 확인합니다:
+```json
+{
+  "resource": "font",
+  "operation": "list",
+  "filterOptions": {
+    "includeSystemFonts": true,
+    "fontType": "system"
+  }
+}
+```
+
+시스템 폰트로 자막 추가하기:
+```json
+{
+  "resource": "subtitle",
+  "operation": "addSubtitle",
+  "fontSource": "system",
+  "systemFontPath": "/System/Library/Fonts/AppleSDGothicNeo.ttc",
+  "size": 48,
+  "color": "white"
+}
+```
 
 ### Merge 노드와 함께 사용하기 (v1.4.0 신규)
 n8n의 Merge 노드를 사용하여 여러 비디오 입력을 결합할 때:

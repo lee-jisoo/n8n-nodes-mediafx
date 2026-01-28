@@ -23,6 +23,7 @@ import {
 	executeAddSubtitle,
 	executeAddText,
 	executeExtractAudio,
+	executeGetMetadata,
 	executeImageToVideo,
 	executeMerge,
 	executeMixAudio,
@@ -37,6 +38,7 @@ import {
 import { audioProperties } from './properties/audio.properties';
 import { fontProperties } from './properties/font.properties';
 import { imageProperties } from './properties/image.properties';
+import { probeProperties } from './properties/probe.properties';
 import { resourceSelection } from './properties/resources.properties';
 import { subtitleProperties } from './properties/subtitle.properties';
 import { videoProperties } from './properties/video.properties';
@@ -65,6 +67,7 @@ export class MediaFX implements INodeType {
 			...audioProperties,
 			...subtitleProperties,
 			...imageProperties,
+			...probeProperties,
 			...fontProperties,
 		],
 	};
@@ -161,7 +164,8 @@ export class MediaFX implements INodeType {
 						case 'list': {
 							const filterOptions = this.getNodeParameter('filterOptions', i, {}) as IDataObject;
 							const fontTypeFilter = (filterOptions.fontType as string) || 'all';
-							const allFonts = getAvailableFonts();
+							const includeSystemFonts = (filterOptions.includeSystemFonts as boolean) ?? false;
+							const allFonts = getAvailableFonts(includeSystemFonts);
 
 							if (fontTypeFilter === 'all') {
 								resultData = allFonts;
@@ -218,6 +222,43 @@ export class MediaFX implements INodeType {
 							deleteUserFont(fontKey);
 							resultData = { message: `Font '${fontKey}' deleted successfully.` };
 							break;
+						}
+					}
+				}
+				// ===================================
+				// PROBE RESOURCE OPERATIONS
+				// ===================================
+				else if (resource === 'probe') {
+					switch (operation) {
+						case 'getMetadata': {
+							const sourceParam = this.getNodeParameter('probeSource', i, {}) as {
+								source?: { sourceType: string; value: string; binaryProperty?: string };
+							};
+							if (!sourceParam.source) {
+								throw new NodeOperationError(
+									this.getNode(),
+									'Media source is required. Please add a media source.',
+									{ itemIndex: i },
+								);
+							}
+							const { paths, cleanup: c } = await resolveInputs(this, i, [sourceParam.source]);
+							cleanup = c;
+
+							const metadata = await executeGetMetadata.call(this, paths[0], i);
+
+							// Push result with metadata as JSON
+							returnData.push({
+								json: {
+									success: true,
+									operation: 'getMetadata',
+									...metadata,
+								},
+								pairedItem: { item: i },
+							});
+
+							// Cleanup and continue to next item
+							await cleanup();
+							continue;
 						}
 					}
 				}
@@ -398,8 +439,11 @@ export class MediaFX implements INodeType {
 							};
 
 							// Collect style options from individual parameters
+							const fontSource = this.getNodeParameter('fontSource', i, 'bundled') as string;
 							const style: IDataObject = {
-								fontKey: this.getNodeParameter('fontKey', i, 'noto-sans-kr'),
+								fontSource,
+								fontKey: fontSource === 'bundled' ? this.getNodeParameter('fontKey', i, 'noto-sans-kr') : undefined,
+								systemFontPath: fontSource === 'system' ? this.getNodeParameter('systemFontPath', i, '') : undefined,
 								size: this.getNodeParameter('size', i, 48),
 								color: this.getNodeParameter('color', i, 'white'),
 								outlineWidth: this.getNodeParameter('outlineWidth', i, 1),
@@ -439,8 +483,11 @@ export class MediaFX implements INodeType {
 							const endTime = this.getNodeParameter('endTime', i, 5) as number;
 
 							// Collect style options from individual parameters
+							const textFontSource = this.getNodeParameter('fontSource', i, 'bundled') as string;
 							const textOptions: IDataObject = {
-								fontKey: this.getNodeParameter('fontKey', i, 'noto-sans-kr'),
+								fontSource: textFontSource,
+								fontKey: textFontSource === 'bundled' ? this.getNodeParameter('fontKey', i, 'noto-sans-kr') : undefined,
+								systemFontPath: textFontSource === 'system' ? this.getNodeParameter('systemFontPath', i, '') : undefined,
 								size: this.getNodeParameter('size', i, 48),
 								color: this.getNodeParameter('color', i, 'white'),
 								outlineWidth: this.getNodeParameter('outlineWidth', i, 1),

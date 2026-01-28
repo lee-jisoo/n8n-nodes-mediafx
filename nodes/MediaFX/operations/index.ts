@@ -10,4 +10,5 @@ export * from './multiVideoTransition';
 export * from './singleVideoFade';
 export * from './imageToVideo';
 export * from './stampImage';
-export * from './overlayVideo'; 
+export * from './overlayVideo';
+export * from './getMetadata'; 

@@ -325,6 +325,30 @@ const BASE_FONTS_DIR = path.resolve(__dirname, '..', '..', 'fonts');
 const USER_FONTS_DIR = path.join(BASE_FONTS_DIR, 'user');
 const USER_FONTS_JSON = path.join(USER_FONTS_DIR, 'user-fonts.json');
 
+// System font directories by platform
+const SYSTEM_FONT_DIRS: Record<string, string[]> = {
+	darwin: [
+		'/System/Library/Fonts',
+		'/Library/Fonts',
+		path.join(os.homedir(), 'Library/Fonts'),
+	],
+	linux: [
+		'/usr/share/fonts',
+		'/usr/local/share/fonts',
+		path.join(os.homedir(), '.fonts'),
+		path.join(os.homedir(), '.local/share/fonts'),
+	],
+	win32: [
+		'C:\\Windows\\Fonts',
+		path.join(os.homedir(), 'AppData\\Local\\Microsoft\\Windows\\Fonts'),
+	],
+};
+
+// Cache for system fonts (to avoid repeated filesystem scans)
+let systemFontsCache: IDataObject | null = null;
+let systemFontsCacheTime: number = 0;
+const SYSTEM_FONTS_CACHE_TTL = 60 * 60 * 1000; // 1 hour cache
+
 // System-registered fonts (must exist in BASE_FONTS_DIR)
 export const REGISTERED_FONTS: IDataObject = {
 	'noto-sans-kr': { name: 'Noto Sans KR', filename: 'NotoSansKR-Regular.ttf', description: 'Google Noto Sans KR', type: 'korean' },
@@ -334,6 +358,67 @@ export const REGISTERED_FONTS: IDataObject = {
 	'inter': { name: 'Inter', filename: 'Inter-Regular.ttf', description: 'Inter UI Font', type: 'global' },
 	'dejavu-sans': { name: 'DejaVu Sans', filename: 'DejaVuSans.ttf', description: 'Default fallback font', type: 'fallback' },
 };
+
+// Scan a directory for font files
+function scanFontDirectory(dir: string, fonts: IDataObject): void {
+	if (!fs.existsSync(dir)) return;
+
+	try {
+		const entries = fs.readdirSync(dir, { withFileTypes: true });
+		for (const entry of entries) {
+			const fullPath = path.join(dir, entry.name);
+			if (entry.isDirectory()) {
+				// Recursively scan subdirectories
+				scanFontDirectory(fullPath, fonts);
+			} else if (entry.isFile()) {
+				const ext = path.extname(entry.name).toLowerCase();
+				if (ext === '.ttf' || ext === '.otf' || ext === '.ttc' || ext === '.otc') {
+					// Generate a unique key from the filename
+					const baseName = path.basename(entry.name, ext);
+					const fontKey = `system-${baseName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+
+					// Skip if already exists (avoid duplicates)
+					if (!fonts[fontKey]) {
+						fonts[fontKey] = {
+							name: baseName,
+							filename: entry.name,
+							path: fullPath,
+							description: `System font from ${dir}`,
+							type: 'system',
+						};
+					}
+				}
+			}
+		}
+	} catch (error) {
+		// Ignore permission errors for system directories
+		console.warn(`Could not scan font directory ${dir}:`, (error as Error).message);
+	}
+}
+
+// Get system fonts with caching
+export function getSystemFonts(): IDataObject {
+	const now = Date.now();
+
+	// Return cached result if still valid
+	if (systemFontsCache && (now - systemFontsCacheTime) < SYSTEM_FONTS_CACHE_TTL) {
+		return systemFontsCache;
+	}
+
+	const fonts: IDataObject = {};
+	const platform = os.platform();
+	const fontDirs = SYSTEM_FONT_DIRS[platform] || [];
+
+	for (const dir of fontDirs) {
+		scanFontDirectory(dir, fonts);
+	}
+
+	// Update cache
+	systemFontsCache = fonts;
+	systemFontsCacheTime = now;
+
+	return fonts;
+}
 
 // Helper functions for font management
 function ensureUserFontsDirectory() {
@@ -360,14 +445,14 @@ function saveUserFonts(userFonts: IDataObject) {
 	fs.writeFileSync(USER_FONTS_JSON, JSON.stringify(userFonts, null, 2));
 }
 
-export function getAvailableFonts(): IDataObject {
+export function getAvailableFonts(includeSystemFonts: boolean = false): IDataObject {
 	const fonts: IDataObject = {};
 
-	// Add registered fonts
+	// Add registered fonts (bundled with the package)
 	for (const [key, font] of Object.entries(REGISTERED_FONTS)) {
 		const fontPath = path.join(BASE_FONTS_DIR, (font as IDataObject).filename as string);
 		if (fs.existsSync(fontPath)) {
-			fonts[key] = { ...(font as IDataObject), path: fontPath, type: (font as IDataObject).type || 'system' };
+			fonts[key] = { ...(font as IDataObject), path: fontPath, type: (font as IDataObject).type || 'bundled' };
 		}
 	}
 
@@ -380,7 +465,39 @@ export function getAvailableFonts(): IDataObject {
 		}
 	}
 
+	// Add system fonts if requested
+	if (includeSystemFonts) {
+		const systemFonts = getSystemFonts();
+		for (const [key, font] of Object.entries(systemFonts)) {
+			// Don't override bundled or user fonts with system fonts
+			if (!fonts[key]) {
+				fonts[key] = font;
+			}
+		}
+	}
+
 	return fonts;
+}
+
+// Get font info by path (for system fonts specified by path)
+export function getFontByPath(fontPath: string): IDataObject | null {
+	if (!fs.existsSync(fontPath)) {
+		return null;
+	}
+
+	const ext = path.extname(fontPath).toLowerCase();
+	if (ext !== '.ttf' && ext !== '.otf' && ext !== '.ttc' && ext !== '.otc') {
+		return null;
+	}
+
+	const baseName = path.basename(fontPath, ext);
+	return {
+		name: baseName,
+		filename: path.basename(fontPath),
+		path: fontPath,
+		description: 'System font',
+		type: 'system',
+	};
 }
 
 export function validateFontKey(fontKey: string) {

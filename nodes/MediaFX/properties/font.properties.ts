@@ -163,6 +163,13 @@ export const fontProperties: INodeProperties[] = [
 		default: {},
 		options: [
 			{
+				displayName: 'Include System Fonts',
+				name: 'includeSystemFonts',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to include fonts installed on the system (may be slow on first scan)',
+			},
+			{
 				displayName: 'Font Type',
 				name: 'fontType',
 				type: 'options',
@@ -171,6 +178,7 @@ export const fontProperties: INodeProperties[] = [
 					{ name: 'Korean Fonts', value: 'korean' },
 					{ name: 'Global Fonts', value: 'global' },
 					{ name: 'User Fonts', value: 'user' },
+					{ name: 'System Fonts', value: 'system' },
 					{ name: 'Fallback Fonts', value: 'fallback' },
 				],
 				default: 'all',

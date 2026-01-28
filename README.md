@@ -10,6 +10,20 @@ This is a custom n8n node for comprehensive, local media processing using FFmpeg
 
 ## 🆕 What's New in This Fork
 
+### v1.6.15
+**New Features**
+
+- **🔍 Get Metadata (Probe)**: Extract comprehensive metadata from video/audio files
+  - Format info: filename, format, duration, size, bitrate
+  - Video stream: codec, resolution, frame rate, aspect ratio, pixel format
+  - Audio stream: codec, sample rate, channels, channel layout
+  - Tags: title, artist, album, and other embedded metadata
+
+- **🔤 System Font Support**: Use fonts installed on your system
+  - Scan system fonts with Font > List operation (enable "Include System Fonts")
+  - Directly specify system font path in Text/Subtitle operations
+  - Supports macOS, Linux, and Windows system font directories
+
 ### v1.6.14
 **Subtitle Enhancements (v1.6.1 ~ v1.6.14)**
 
@@ -98,6 +112,11 @@ RUN cd /home/node/.n8n/nodes && npm install @lee-jisoo/n8n-nodes-mediafx
 | **Add String** | Burn text overlay with styling |
 | **Add Subtitle** | Add subtitles from SRT file ⭐ FIXED |
 
+### Probe Operations
+| Operation | Description |
+|-----------|-------------|
+| **Get Metadata** | Extract metadata from video/audio files (format, streams, tags) |
+
 ### Font Operations
 | Operation | Description |
 |-----------|-------------|
@@ -107,7 +126,75 @@ RUN cd /home/node/.n8n/nodes && npm install @lee-jisoo/n8n-nodes-mediafx
 
 ## Usage Examples
 
-### Speed Adjustment (New!)
+### Get Media Metadata (New!)
+Extract metadata from video or audio files:
+```json
+{
+  "resource": "probe",
+  "operation": "getMetadata",
+  "probeSource": {
+    "source": { "sourceType": "binary", "binaryProperty": "data" }
+  }
+}
+```
+
+Example output:
+```json
+{
+  "success": true,
+  "operation": "getMetadata",
+  "format": {
+    "filename": "video.mp4",
+    "formatName": "mov,mp4,m4a,3gp,3g2,mj2",
+    "duration": 120.5,
+    "size": 15728640,
+    "bitRate": 1048576
+  },
+  "video": {
+    "codec": "h264",
+    "width": 1920,
+    "height": 1080,
+    "frameRate": 30,
+    "aspectRatio": "16:9"
+  },
+  "audio": {
+    "codec": "aac",
+    "sampleRate": 48000,
+    "channels": 2,
+    "channelLayout": "stereo"
+  },
+  "hasVideo": true,
+  "hasAudio": true
+}
+```
+
+### Using System Fonts (New!)
+
+First, list available system fonts:
+```json
+{
+  "resource": "font",
+  "operation": "list",
+  "filterOptions": {
+    "includeSystemFonts": true,
+    "fontType": "system"
+  }
+}
+```
+
+Add subtitles with a system font:
+```json
+{
+  "resource": "subtitle",
+  "operation": "addSubtitle",
+  "fontSource": "system",
+  "systemFontPath": "/System/Library/Fonts/Helvetica.ttc",
+  "size": 48,
+  "color": "white"
+}
+```
+
+### Speed Adjustment
 Create a 2x speed video:
 ```json
 {
