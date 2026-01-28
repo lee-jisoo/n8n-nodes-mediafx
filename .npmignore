@@ -1,0 +1,5 @@
+# Exclude non-English README from npm package
+README.ko-KR.md
+CHANGELOG.md
+FFMPEG_COMPATIBILITY.md
+PROJECT_RULES.md
