@@ -159,6 +159,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 		// Find timestamp line (may be first or second line)
 		let timestampLine = '';
 		let textStartIndex = 0;
+		let inlineText = ''; // Text that may be on the same line as timestamp
 		
 		for (let i = 0; i < lines.length; i++) {
 			if (lines[i].includes('-->')) {
@@ -170,18 +171,36 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
 		if (!timestampLine) continue;
 
-		// Parse timestamps: 00:00:01,000 --> 00:00:04,000
+		// Parse timestamps: 00:00:01,000 --> 00:00:04,000 [optional inline text]
+		// Extended regex to capture text after timestamp on same line
 		const match = timestampLine.match(
-			/(\d{1,2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{1,2}):(\d{2}):(\d{2})[,.](\d{3})/
+			/(\d{1,2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{1,2}):(\d{2}):(\d{2})[,.](\d{3})(?:\s+(.*))?/
 		);
 		if (!match) continue;
+
+		// Check if text exists on the same line as timestamp (non-standard SRT format)
+		if (match[9] && match[9].trim()) {
+			inlineText = match[9].trim();
+		}
 
 		// Convert to ASS time format: H:MM:SS.cc
 		const startTime = `${parseInt(match[1])}:${match[2]}:${match[3]}.${match[4].substring(0, 2)}`;
 		const endTime = `${parseInt(match[5])}:${match[6]}:${match[7]}.${match[8].substring(0, 2)}`;
 
-		// Get subtitle text (remaining lines)
-		let text = lines.slice(textStartIndex).join('\\N');
+		// Get subtitle text
+		// Priority: inline text (on timestamp line) > remaining lines
+		let text: string;
+		if (inlineText) {
+			// Non-standard format: text on same line as timestamp
+			// Also include any additional lines if present
+			const additionalLines = lines.slice(textStartIndex).filter(l => l.trim());
+			text = additionalLines.length > 0 
+				? [inlineText, ...additionalLines].join('\\N')
+				: inlineText;
+		} else {
+			// Standard format: text on separate lines
+			text = lines.slice(textStartIndex).join('\\N');
+		}
 		
 		// Add horizontal padding when background is enabled
 		if (enableBackground && text.trim()) {

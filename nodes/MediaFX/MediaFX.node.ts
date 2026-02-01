@@ -22,6 +22,7 @@ import {
 import {
 	executeAddSubtitle,
 	executeAddText,
+	executeAddTextToImage,
 	executeExtractAudio,
 	executeGetMetadata,
 	executeImageToVideo,
@@ -548,6 +549,45 @@ export class MediaFX implements INodeType {
 								outputFormat,
 								i,
 							);
+							break;
+						}
+
+						case 'addTextToImage': {
+							const sourceParam = this.getNodeParameter('sourceImageText', i, {}) as {
+								source?: { sourceType: string; value: string; binaryProperty?: string };
+							};
+							if (!sourceParam.source) {
+								throw new NodeOperationError(
+									this.getNode(),
+									'Image source is required. Please add an image source.',
+									{ itemIndex: i },
+								);
+							}
+							const { paths, cleanup: c } = await resolveInputs(this, i, [sourceParam.source]);
+							cleanup = c;
+
+							const text = this.getNodeParameter('imageText', i, 'Hello, n8n!') as string;
+
+							const textOptions: IDataObject = {
+								fontKey: this.getNodeParameter('imageTextFontKey', i, 'noto-sans-kr'),
+								size: this.getNodeParameter('imageTextSize', i, 48),
+								color: this.getNodeParameter('imageTextColor', i, 'white'),
+								outlineWidth: this.getNodeParameter('imageTextOutlineWidth', i, 0),
+								outlineColor: this.getNodeParameter('imageTextOutlineColor', i, 'black'),
+								enableBackground: this.getNodeParameter('imageTextEnableBackground', i, false),
+								backgroundColor: this.getNodeParameter('imageTextBackgroundColor', i, 'black'),
+								backgroundOpacity: this.getNodeParameter('imageTextBackgroundOpacity', i, 0.5),
+								boxPadding: this.getNodeParameter('imageTextBoxPadding', i, 5),
+								positionType: this.getNodeParameter('imageTextPositionType', i, 'alignment'),
+								horizontalAlign: this.getNodeParameter('imageTextHorizontalAlign', i, 'center'),
+								verticalAlign: this.getNodeParameter('imageTextVerticalAlign', i, 'middle'),
+								paddingX: this.getNodeParameter('imageTextPaddingX', i, 20),
+								paddingY: this.getNodeParameter('imageTextPaddingY', i, 20),
+								x: this.getNodeParameter('imageTextX', i, '(w-text_w)/2'),
+								y: this.getNodeParameter('imageTextY', i, '(h-text_h)/2'),
+							};
+
+							outputPath = await executeAddTextToImage.call(this, paths[0], text, textOptions, i);
 							break;
 						}
 

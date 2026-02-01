@@ -14,6 +14,11 @@ export const imageProperties: INodeProperties[] = [
 		},
 		options: [
 			{
+				name: 'Add Text',
+				value: 'addTextToImage',
+				description: 'Overlay text onto an image',
+			},
+			{
 				name: 'To Video',
 				value: 'imageToVideo',
 				description: 'Create a video from a static image for a specified duration',
@@ -25,6 +30,300 @@ export const imageProperties: INodeProperties[] = [
 			},
 		],
 		default: 'imageToVideo',
+	},
+
+	// =============================
+	// == ADD TEXT TO IMAGE FIELDS ==
+	// =============================
+	{
+		displayName: 'Source Image',
+		name: 'sourceImageText',
+		type: 'fixedCollection',
+		placeholder: 'Add Image Source',
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+			},
+		},
+		default: {},
+		options: [
+			{
+				displayName: 'Source',
+				name: 'source',
+				values: [
+					{
+						displayName: 'Source Type', name: 'sourceType', type: 'options',
+						options: [ { name: 'URL', value: 'url' }, { name: 'Binary Data', value: 'binary' } ],
+						default: 'url',
+					},
+					{ displayName: 'Value', name: 'value', type: 'string', default: '', placeholder: 'https://example.com/image.png' , displayOptions: { show: { sourceType: ['url'] } }},
+					{ displayName: 'Binary Property', name: 'binaryProperty', type: 'string', default: 'data' , displayOptions: { show: { sourceType: ['binary'] } }},
+				],
+			},
+		],
+	},
+	{
+		displayName: 'Text',
+		name: 'imageText',
+		type: 'string',
+		default: 'Hello, n8n!',
+		required: true,
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+			},
+		},
+		description: 'The text to overlay on the image',
+	},
+	{
+		displayName: 'Font',
+		name: 'imageTextFontKey',
+		type: 'options',
+		typeOptions: {
+			loadOptionsMethod: 'getFonts',
+		},
+		default: 'noto-sans-kr',
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+			},
+		},
+		description: 'Select a font for the text',
+	},
+	{
+		displayName: 'Font Size',
+		name: 'imageTextSize',
+		type: 'number',
+		default: 48,
+		typeOptions: {
+			minValue: 1,
+		},
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+			},
+		},
+		description: 'Font size in pixels',
+	},
+	{
+		displayName: 'Color',
+		name: 'imageTextColor',
+		type: 'string',
+		default: 'white',
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+			},
+		},
+		description: 'Text color (e.g., white, #FF0000, rgb(255,0,0))',
+	},
+	{
+		displayName: 'Outline Width',
+		name: 'imageTextOutlineWidth',
+		type: 'number',
+		default: 0,
+		typeOptions: {
+			minValue: 0,
+		},
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+			},
+		},
+		description: 'Width of the text outline/border in pixels. Set to 0 for no outline.',
+	},
+	{
+		displayName: 'Outline Color',
+		name: 'imageTextOutlineColor',
+		type: 'string',
+		default: 'black',
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+			},
+		},
+		description: 'Color of the text outline/border',
+	},
+	{
+		displayName: 'Enable Background Box',
+		name: 'imageTextEnableBackground',
+		type: 'boolean',
+		default: false,
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+			},
+		},
+		description: 'Whether to add a background box behind the text',
+	},
+	{
+		displayName: 'Background Color',
+		name: 'imageTextBackgroundColor',
+		type: 'string',
+		default: 'black',
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+				imageTextEnableBackground: [true],
+			},
+		},
+		description: 'Color of the background box',
+	},
+	{
+		displayName: 'Background Opacity',
+		name: 'imageTextBackgroundOpacity',
+		type: 'number',
+		default: 0.5,
+		typeOptions: {
+			minValue: 0,
+			maxValue: 1,
+			numberStepSize: 0.1,
+		},
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+				imageTextEnableBackground: [true],
+			},
+		},
+		description: 'Opacity of the background box (0 = transparent, 1 = opaque)',
+	},
+	{
+		displayName: 'Box Padding',
+		name: 'imageTextBoxPadding',
+		type: 'number',
+		default: 5,
+		typeOptions: {
+			minValue: 0,
+		},
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+				imageTextEnableBackground: [true],
+			},
+		},
+		description: 'Padding around the text inside the background box',
+	},
+	{
+		displayName: 'Position Type',
+		name: 'imageTextPositionType',
+		type: 'options',
+		options: [
+			{ name: 'Alignment', value: 'alignment' },
+			{ name: 'Custom', value: 'custom' },
+		],
+		default: 'alignment',
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+			},
+		},
+		description: 'How to position the text on the image',
+	},
+	{
+		displayName: 'Horizontal Alignment',
+		name: 'imageTextHorizontalAlign',
+		type: 'options',
+		options: [
+			{ name: 'Left', value: 'left' },
+			{ name: 'Center', value: 'center' },
+			{ name: 'Right', value: 'right' },
+		],
+		default: 'center',
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+				imageTextPositionType: ['alignment'],
+			},
+		},
+		description: 'Horizontal alignment of the text',
+	},
+	{
+		displayName: 'Vertical Alignment',
+		name: 'imageTextVerticalAlign',
+		type: 'options',
+		options: [
+			{ name: 'Top', value: 'top' },
+			{ name: 'Middle', value: 'middle' },
+			{ name: 'Bottom', value: 'bottom' },
+		],
+		default: 'middle',
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+				imageTextPositionType: ['alignment'],
+			},
+		},
+		description: 'Vertical alignment of the text',
+	},
+	{
+		displayName: 'Padding X',
+		name: 'imageTextPaddingX',
+		type: 'number',
+		default: 20,
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+				imageTextPositionType: ['alignment'],
+			},
+		},
+		description: 'Horizontal padding from the edge in pixels',
+	},
+	{
+		displayName: 'Padding Y',
+		name: 'imageTextPaddingY',
+		type: 'number',
+		default: 20,
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+				imageTextPositionType: ['alignment'],
+			},
+		},
+		description: 'Vertical padding from the edge in pixels',
+	},
+	{
+		displayName: 'Position X',
+		name: 'imageTextX',
+		type: 'string',
+		default: '(w-text_w)/2',
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+				imageTextPositionType: ['custom'],
+			},
+		},
+		description: "X position. Supports FFmpeg expressions like '10', '(w-text_w)/2', 'w-text_w-10'.",
+	},
+	{
+		displayName: 'Position Y',
+		name: 'imageTextY',
+		type: 'string',
+		default: '(h-text_h)/2',
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+				imageTextPositionType: ['custom'],
+			},
+		},
+		description: "Y position. Supports FFmpeg expressions like '10', '(h-text_h)/2', 'h-th-10'.",
 	},
 
 	// =============================

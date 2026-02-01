@@ -4,6 +4,7 @@ export * from './speed';
 export * from './mixAudio';
 export * from './addSubtitle';
 export * from './addText';
+export * from './addTextToImage';
 export * from './extractAudio';
 export * from './separateAudio';
 export * from './multiVideoTransition';

@@ -10,6 +10,17 @@ This is a custom n8n node for comprehensive, local media processing using FFmpeg
 
 ## 🆕 What's New in This Fork
 
+### v1.6.21
+**New Features**
+
+- **🖼️ Add Text to Image**: Overlay text onto static images
+  - Font selection (bundled, user-uploaded, system fonts)
+  - Text styling: size, color
+  - **Outline**: configurable width and color for text border
+  - **Background Box**: optional background with color, opacity, and padding
+  - Positioning: alignment-based (9-point grid) or custom X/Y coordinates
+  - Output format matches input image format (PNG, JPG, etc.)
+
 ### v1.6.20
 **New Features**
 
@@ -81,6 +92,27 @@ npm install @lee-jisoo/n8n-nodes-mediafx
 RUN cd /home/node/.n8n/nodes && npm install @lee-jisoo/n8n-nodes-mediafx
 ```
 
+## ⚠️ Troubleshooting
+
+### Node not working after upgrade
+If the node doesn't work properly after upgrading to a new version, try **uninstalling and reinstalling** the plugin:
+
+**Via n8n Community Nodes:**
+1. Go to **Settings > Community Nodes**
+2. Find `@lee-jisoo/n8n-nodes-mediafx` and click **Uninstall**
+3. Restart n8n
+4. Go to **Settings > Community Nodes** again
+5. Click **Install** and enter `@lee-jisoo/n8n-nodes-mediafx`
+6. Restart n8n
+
+**Manual Installation:**
+```bash
+cd ~/.n8n/nodes
+npm uninstall @lee-jisoo/n8n-nodes-mediafx
+npm install @lee-jisoo/n8n-nodes-mediafx
+# Restart n8n
+```
+
 ## Features
 
 ### Video Operations
@@ -103,6 +135,7 @@ RUN cd /home/node/.n8n/nodes && npm install @lee-jisoo/n8n-nodes-mediafx
 ### Image Operations
 | Operation | Description |
 |-----------|-------------|
+| **Add Text** | Overlay text on image with styling, outline, background box ⭐ NEW |
 | **Image to Video** | Create video from image with custom duration |
 | **Stamp Image** | Add watermark with position, size, rotation, opacity, time control |
 
@@ -126,7 +159,42 @@ RUN cd /home/node/.n8n/nodes && npm install @lee-jisoo/n8n-nodes-mediafx
 
 ## Usage Examples
 
-### Get Media Metadata (New!)
+### Add Text to Image (New!)
+Overlay text on an image with styling:
+```json
+{
+  "resource": "image",
+  "operation": "addTextToImage",
+  "sourceImageText": {
+    "source": { "sourceType": "binary", "binaryProperty": "data" }
+  },
+  "imageText": "Hello, World!",
+  "imageTextFontKey": "noto-sans-kr",
+  "imageTextSize": 48,
+  "imageTextColor": "white",
+  "imageTextOutlineWidth": 2,
+  "imageTextOutlineColor": "black",
+  "imageTextPositionType": "alignment",
+  "imageTextHorizontalAlign": "center",
+  "imageTextVerticalAlign": "bottom",
+  "imageTextPaddingY": 50
+}
+```
+
+With background box:
+```json
+{
+  "resource": "image",
+  "operation": "addTextToImage",
+  "imageText": "Caption Text",
+  "imageTextEnableBackground": true,
+  "imageTextBackgroundColor": "black",
+  "imageTextBackgroundOpacity": 0.7,
+  "imageTextBoxPadding": 10
+}
+```
+
+### Get Media Metadata
 Extract metadata from video or audio files:
 ```json
 {
