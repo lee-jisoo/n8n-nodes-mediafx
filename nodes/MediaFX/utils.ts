@@ -14,52 +14,84 @@ let ffmpegInitialized = false;
 function tryInitializeFfmpeg(): boolean {
 	if (ffmpegInitialized) return true;
 
+	let ffmpegBinaryPath: string | null = null;
+	let ffprobeBinaryPath: string | null = null;
+
+	// Strategy 1: Try ffmpeg-static (recommended, includes FFmpeg 5.x+)
 	try {
 		// eslint-disable-next-line @typescript-eslint/no-require-imports
-		const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+		const ffmpegStatic = require('ffmpeg-static');
+		if (ffmpegStatic && fs.existsSync(ffmpegStatic)) {
+			ffmpegBinaryPath = ffmpegStatic;
+			console.log(`FFmpeg found via ffmpeg-static: ${ffmpegStatic}`);
+		}
+	} catch (e) {
+		console.warn('ffmpeg-static not available, trying fallback...');
+	}
+
+	// Strategy 2: Fallback to @ffmpeg-installer/ffmpeg
+	if (!ffmpegBinaryPath) {
+		try {
+			// eslint-disable-next-line @typescript-eslint/no-require-imports
+			const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+			if (ffmpegInstaller.path && fs.existsSync(ffmpegInstaller.path)) {
+				ffmpegBinaryPath = ffmpegInstaller.path;
+				console.log(`FFmpeg found via @ffmpeg-installer: ${ffmpegInstaller.path}`);
+			}
+		} catch (e) {
+			console.warn('@ffmpeg-installer/ffmpeg not available');
+		}
+	}
+
+	// Get ffprobe from @ffprobe-installer/ffprobe
+	try {
 		// eslint-disable-next-line @typescript-eslint/no-require-imports
 		const ffprobeInstaller = require('@ffprobe-installer/ffprobe');
-
-		const ffmpegInstallerPath = ffmpegInstaller.path;
-		const ffprobeInstallerPath = ffprobeInstaller.path;
-
-		if (ffmpegInstallerPath && fs.existsSync(ffmpegInstallerPath) && ffprobeInstallerPath && fs.existsSync(ffprobeInstallerPath)) {
-			// Set executable permissions dynamically
-			if (os.platform() !== 'win32') {
-				try {
-					fs.chmodSync(ffmpegInstallerPath, '755');
-					fs.chmodSync(ffprobeInstallerPath, '755');
-					console.log('Dynamically set permissions for ffmpeg and ffprobe.');
-				} catch (permissionError) {
-					console.warn('Failed to set executable permissions dynamically:', permissionError);
-				}
-			}
-
-			ffmpeg.setFfmpegPath(ffmpegInstallerPath);
-			ffmpeg.setFfprobePath(ffprobeInstallerPath);
-			ffmpegPath = ffmpegInstallerPath;
-			ffmpegInitialized = true;
-			console.log(`FFmpeg initialized with @ffmpeg-installer: ${ffmpegInstallerPath}`);
-			console.log(`FFprobe initialized with @ffprobe-installer: ${ffprobeInstallerPath}`);
-			return true;
+		if (ffprobeInstaller.path && fs.existsSync(ffprobeInstaller.path)) {
+			ffprobeBinaryPath = ffprobeInstaller.path;
+			console.log(`FFprobe found via @ffprobe-installer: ${ffprobeInstaller.path}`);
 		}
-	} catch (error) {
-		// This is the only strategy, so if it fails, we throw.
-		console.error('Failed to load FFmpeg/FFprobe from node_modules.', error);
+	} catch (e) {
+		console.warn('@ffprobe-installer/ffprobe not available');
+	}
+
+	// Validate and set paths
+	if (!ffmpegBinaryPath) {
+		console.error('FFmpeg binary not found in any package.');
 		throw new NodeOperationError(
-			// We can't use `this.getNode()` here as we are in a utility function.
-			// A generic error is sufficient.
 			{ name: 'MediaFX', type: 'n8n-nodes-mediafx.mediaFX' } as any,
-			'Could not load the required FFmpeg executable from the package. ' +
-			'This might be due to a restricted execution environment or a broken installation. ' +
-			'Please check your n8n environment permissions. ' +
-			`Original error: ${(error as Error).message}`,
+			'Could not find FFmpeg executable. Please ensure ffmpeg-static or @ffmpeg-installer/ffmpeg is properly installed.',
 		);
 	}
 
-	// If we get here, something went wrong, but the catch didn't trigger.
-	console.error('FFmpeg binaries were not found in the expected package path.');
-	return false;
+	if (!ffprobeBinaryPath) {
+		console.error('FFprobe binary not found.');
+		throw new NodeOperationError(
+			{ name: 'MediaFX', type: 'n8n-nodes-mediafx.mediaFX' } as any,
+			'Could not find FFprobe executable. Please ensure @ffprobe-installer/ffprobe is properly installed.',
+		);
+	}
+
+	// Set executable permissions on non-Windows systems
+	if (os.platform() !== 'win32') {
+		try {
+			fs.chmodSync(ffmpegBinaryPath, '755');
+			fs.chmodSync(ffprobeBinaryPath, '755');
+			console.log('Set executable permissions for ffmpeg and ffprobe.');
+		} catch (permissionError) {
+			console.warn('Failed to set executable permissions:', permissionError);
+		}
+	}
+
+	// Configure fluent-ffmpeg
+	ffmpeg.setFfmpegPath(ffmpegBinaryPath);
+	ffmpeg.setFfprobePath(ffprobeBinaryPath);
+	ffmpegPath = ffmpegBinaryPath;
+	ffmpegInitialized = true;
+
+	console.log(`FFmpeg initialized: ${ffmpegBinaryPath}`);
+	console.log(`FFprobe initialized: ${ffprobeBinaryPath}`);
+	return true;
 }
 
 // Try to initialize FFmpeg on module load
