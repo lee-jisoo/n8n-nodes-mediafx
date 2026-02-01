@@ -10,6 +10,14 @@ This is a custom n8n node for comprehensive, local media processing using FFmpeg
 
 ## 🆕 What's New in This Fork
 
+### v1.6.24
+**Bug Fixes**
+
+- **🐛 Add Text to Image Fix**: Fixed "Unable to find a suitable output format" error
+  - Issue occurred when input image was downloaded from URL without file extension
+  - Now automatically detects actual image format using ffprobe
+  - Properly outputs correct format (JPEG, PNG, etc.) regardless of input file extension
+
 ### v1.6.21
 **New Features**
 

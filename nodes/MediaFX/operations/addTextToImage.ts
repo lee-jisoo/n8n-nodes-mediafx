@@ -4,6 +4,31 @@ import ffmpeg = require('fluent-ffmpeg');
 import { getTempFile, runFfmpeg, getAvailableFonts } from '../utils';
 import * as fs from 'fs-extra';
 
+// Map FFmpeg format names to file extensions
+const FORMAT_TO_EXTENSION: Record<string, string> = {
+	'jpeg_pipe': '.jpg',
+	'png_pipe': '.png',
+	'gif_pipe': '.gif',
+	'webp_pipe': '.webp',
+	'bmp_pipe': '.bmp',
+	'tiff_pipe': '.tiff',
+	'image2': '.jpg', // Default for generic image format
+};
+
+// Get the actual image format using ffprobe
+function detectImageFormat(filePath: string): Promise<string> {
+	return new Promise((resolve, reject) => {
+		ffmpeg.ffprobe(filePath, (err, metadata) => {
+			if (err) {
+				return reject(new Error(`Failed to probe image: ${err.message}`));
+			}
+			const formatName = metadata.format.format_name || '';
+			const extension = FORMAT_TO_EXTENSION[formatName] || '.jpg';
+			resolve(extension);
+		});
+	});
+}
+
 function getPositionFromAlignment(
 	horizontalAlign: string,
 	verticalAlign: string,
@@ -101,9 +126,19 @@ export async function executeAddTextToImage(
 		positionY = (options.y as string) || '(h-text_h)/2';
 	}
 
-	// Use the same extension as input image
-	const inputExt = path.extname(imagePath);
-	const outputPath = getTempFile(inputExt);
+	// Determine output extension - detect actual format if input has .tmp extension
+	let outputExt = path.extname(imagePath).toLowerCase();
+	const knownImageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff'];
+	if (!knownImageExtensions.includes(outputExt)) {
+		// Input has unknown extension (e.g., .tmp from URL download), detect actual format
+		try {
+			outputExt = await detectImageFormat(imagePath);
+		} catch {
+			// Fallback to .jpg if detection fails
+			outputExt = '.jpg';
+		}
+	}
+	const outputPath = getTempFile(outputExt);
 
 	// Escape single quotes in text
 	const escapedText = text.replace(/'/g, `''`);
