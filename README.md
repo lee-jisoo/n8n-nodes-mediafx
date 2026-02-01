@@ -10,13 +10,20 @@ This is a custom n8n node for comprehensive, local media processing using FFmpeg
 
 ## 🆕 What's New in This Fork
 
+### v1.6.28
+**New Features**
+
+- **📝 Multi-line Center Alignment**: Each line is individually centered
+  - Works with older FFmpeg versions (no text_align dependency)
+  - Each line rendered as separate drawtext filter
+  - Line spacing option supported
+
 ### v1.6.27
 **Improvements**
 
 - **🔧 FFmpeg Bundling Fix**: Now uses `ffmpeg-static` (FFmpeg 5.x) as primary source
   - More reliable cross-platform support
   - Fixes issues with old system FFmpeg being used instead of bundled version
-  - All advanced features (text_align, line_spacing) now work properly
 
 ### v1.6.26
 **New Features**

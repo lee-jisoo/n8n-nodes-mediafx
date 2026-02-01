@@ -138,46 +138,6 @@ function calculateAutoFontSize(
 	return fontSize;
 }
 
-function getPositionFromAlignment(
-	horizontalAlign: string,
-	verticalAlign: string,
-	paddingX: number,
-	paddingY: number
-): { x: string; y: string } {
-	let x: string;
-	let y: string;
-
-	// Set X position based on horizontal alignment
-	switch (horizontalAlign) {
-		case 'left':
-			x = `${paddingX}`;
-			break;
-		case 'right':
-			x = `w-text_w-${paddingX}`;
-			break;
-		case 'center':
-		default:
-			x = '(w-text_w)/2';
-			break;
-	}
-
-	// Set Y position based on vertical alignment
-	switch (verticalAlign) {
-		case 'top':
-			y = `${paddingY}`;
-			break;
-		case 'bottom':
-			y = `h-th-${paddingY}`;
-			break;
-		case 'middle':
-		default:
-			y = '(h-text_h)/2';
-			break;
-	}
-
-	return { x, y };
-}
-
 export async function executeAddTextToImage(
 	this: IExecuteFunctions,
 	imagePath: string,
@@ -227,8 +187,8 @@ export async function executeAddTextToImage(
 	}
 
 	const fontColor = options.color || 'white';
-	const textAlign = (options.textAlign as string) || 'left';
 	const lineSpacing = (options.lineSpacing as number) ?? 10;
+	const horizontalAlign = (options.horizontalAlign as string) || 'center';
 
 	// Outline options
 	const outlineWidth = options.outlineWidth || 0;
@@ -239,25 +199,6 @@ export async function executeAddTextToImage(
 	const backgroundColor = options.backgroundColor || 'black';
 	const backgroundOpacity = options.backgroundOpacity ?? 0.5;
 	const boxPadding = options.boxPadding || 5;
-
-	// Handle position based on position type
-	let positionX: string;
-	let positionY: string;
-
-	const positionType = options.positionType || 'alignment';
-
-	if (positionType === 'alignment') {
-		const horizontalAlign = (options.horizontalAlign as string) || 'center';
-		const verticalAlign = (options.verticalAlign as string) || 'middle';
-
-		const position = getPositionFromAlignment(horizontalAlign, verticalAlign, paddingX, paddingY);
-		positionX = position.x;
-		positionY = position.y;
-	} else {
-		// Custom position
-		positionX = (options.x as string) || '(w-text_w)/2';
-		positionY = (options.y as string) || '(h-text_h)/2';
-	}
 
 	// Determine output extension - detect actual format if input has .tmp extension
 	let outputExt = path.extname(imagePath).toLowerCase();
@@ -273,28 +214,79 @@ export async function executeAddTextToImage(
 	}
 	const outputPath = getTempFile(outputExt);
 
-	// Escape single quotes in text
-	const escapedText = cleanedText.replace(/'/g, `''`);
+	// Split text into lines for multi-line center alignment support
+	const lines = cleanedText.split('\n').filter(line => line.length > 0);
 
-	// Map text alignment to FFmpeg format (L=left, C=center, R=right)
-	const textAlignMap: Record<string, string> = { left: 'L', center: 'C', right: 'R' };
-	const ffmpegTextAlign = textAlignMap[textAlign] || 'L';
+	// Calculate line height (fontSize + lineSpacing)
+	const lineHeight = fontSize + lineSpacing;
+	const totalTextHeight = lines.length * fontSize + (lines.length - 1) * lineSpacing;
 
-	// Build drawtext filter
-	let drawtext = `drawtext=fontfile=${fontPath}:text='${escapedText}':fontsize=${fontSize}:fontcolor=${fontColor}:x=${positionX}:y=${positionY}:text_align=${ffmpegTextAlign}:line_spacing=${lineSpacing}`;
+	// Build drawtext filters - one for each line
+	const drawtextFilters: string[] = [];
 
-	// Add outline (border) if width > 0
-	if (outlineWidth > 0) {
-		drawtext += `:borderw=${outlineWidth}:bordercolor=${outlineColor}`;
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i];
+		const escapedLine = line.replace(/'/g, `''`);
+
+		// Calculate X position based on horizontal alignment
+		let lineX: string;
+		switch (horizontalAlign) {
+			case 'left':
+				lineX = `${paddingX}`;
+				break;
+			case 'right':
+				lineX = `w-text_w-${paddingX}`;
+				break;
+			case 'center':
+			default:
+				lineX = '(w-text_w)/2';
+				break;
+		}
+
+		// Calculate Y position for this line
+		// Base Y from vertical alignment, then offset by line index
+		let lineY: string;
+		const verticalAlign = (options.verticalAlign as string) || 'middle';
+		const lineOffset = i * lineHeight;
+
+		switch (verticalAlign) {
+			case 'top':
+				lineY = `${paddingY + lineOffset}`;
+				break;
+			case 'bottom':
+				// Start from bottom, going up for total height, then down for each line
+				lineY = `h-${paddingY + totalTextHeight - lineOffset}`;
+				break;
+			case 'middle':
+			default:
+				// Center vertically, then offset each line
+				lineY = `(h-${totalTextHeight})/2+${lineOffset}`;
+				break;
+		}
+
+		// Build drawtext for this line
+		let drawtext = `drawtext=fontfile=${fontPath}:text='${escapedLine}':fontsize=${fontSize}:fontcolor=${fontColor}:x=${lineX}:y=${lineY}`;
+
+		// Add outline (border) if width > 0
+		if (outlineWidth > 0) {
+			drawtext += `:borderw=${outlineWidth}:bordercolor=${outlineColor}`;
+		}
+
+		// Add background box if enabled
+		if (enableBackground) {
+			drawtext += `:box=1:boxcolor=${backgroundColor}@${backgroundOpacity}:boxborderw=${boxPadding}`;
+		}
+
+		drawtextFilters.push(drawtext);
 	}
 
-	// Add background box if enabled
-	if (enableBackground) {
-		drawtext += `:box=1:boxcolor=${backgroundColor}@${backgroundOpacity}:boxborderw=${boxPadding}`;
+	// If no lines (empty text), create a single empty filter to avoid errors
+	if (drawtextFilters.length === 0) {
+		drawtextFilters.push(`drawtext=fontfile=${fontPath}:text='':fontsize=${fontSize}:fontcolor=${fontColor}:x=0:y=0`);
 	}
 
 	const command = ffmpeg(imagePath)
-		.videoFilters(drawtext)
+		.videoFilters(drawtextFilters)
 		.frames(1)
 		.save(outputPath);
 
