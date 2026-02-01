@@ -94,6 +94,25 @@ export const imageProperties: INodeProperties[] = [
 		description: 'Select a font for the text',
 	},
 	{
+		displayName: 'Font Size Mode',
+		name: 'imageTextSizeMode',
+		type: 'options',
+		options: [
+			{ name: 'Fixed (px)', value: 'fixed' },
+			{ name: 'Auto - Small', value: 'auto-small', description: 'Automatically fit text, smaller size' },
+			{ name: 'Auto - Medium', value: 'auto-medium', description: 'Automatically fit text, medium size' },
+			{ name: 'Auto - Large', value: 'auto-large', description: 'Automatically fit text, fills available width' },
+		],
+		default: 'fixed',
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+			},
+		},
+		description: 'How to determine font size. Auto modes calculate size based on image dimensions and text length.',
+	},
+	{
 		displayName: 'Font Size',
 		name: 'imageTextSize',
 		type: 'number',
@@ -105,6 +124,7 @@ export const imageProperties: INodeProperties[] = [
 			show: {
 				resource: ['image'],
 				operation: ['addTextToImage'],
+				imageTextSizeMode: ['fixed'],
 			},
 		},
 		description: 'Font size in pixels',
@@ -121,6 +141,40 @@ export const imageProperties: INodeProperties[] = [
 			},
 		},
 		description: 'Text color (e.g., white, #FF0000, rgb(255,0,0))',
+	},
+	{
+		displayName: 'Text Alignment (Multi-line)',
+		name: 'imageTextAlign',
+		type: 'options',
+		options: [
+			{ name: 'Left', value: 'left' },
+			{ name: 'Center', value: 'center' },
+			{ name: 'Right', value: 'right' },
+		],
+		default: 'left',
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+			},
+		},
+		description: 'Text alignment for multi-line text (when text contains line breaks)',
+	},
+	{
+		displayName: 'Line Spacing',
+		name: 'imageTextLineSpacing',
+		type: 'number',
+		default: 10,
+		typeOptions: {
+			minValue: 0,
+		},
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+			},
+		},
+		description: 'Additional spacing between lines in pixels (for multi-line text)',
 	},
 	{
 		displayName: 'Outline Width',

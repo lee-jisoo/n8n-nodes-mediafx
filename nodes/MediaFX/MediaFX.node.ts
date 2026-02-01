@@ -568,10 +568,15 @@ export class MediaFX implements INodeType {
 
 							const text = this.getNodeParameter('imageText', i, 'Hello, n8n!') as string;
 
+							const sizeMode = this.getNodeParameter('imageTextSizeMode', i, 'fixed') as string;
 							const textOptions: IDataObject = {
 								fontKey: this.getNodeParameter('imageTextFontKey', i, 'noto-sans-kr'),
-								size: this.getNodeParameter('imageTextSize', i, 48),
+								size: sizeMode === 'fixed'
+									? this.getNodeParameter('imageTextSize', i, 48)
+									: sizeMode, // Pass 'auto-small', 'auto-medium', or 'auto-large'
 								color: this.getNodeParameter('imageTextColor', i, 'white'),
+								textAlign: this.getNodeParameter('imageTextAlign', i, 'left'),
+								lineSpacing: this.getNodeParameter('imageTextLineSpacing', i, 10),
 								outlineWidth: this.getNodeParameter('imageTextOutlineWidth', i, 0),
 								outlineColor: this.getNodeParameter('imageTextOutlineColor', i, 'black'),
 								enableBackground: this.getNodeParameter('imageTextEnableBackground', i, false),

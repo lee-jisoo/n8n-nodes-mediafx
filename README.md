@@ -10,6 +10,25 @@ This is a custom n8n node for comprehensive, local media processing using FFmpeg
 
 ## 🆕 What's New in This Fork
 
+### v1.6.26
+**New Features**
+
+- **📐 Auto Font Size**: Automatically calculate font size based on image dimensions
+  - `Auto - Small`: Fits text at 50% of calculated size
+  - `Auto - Medium`: Fits text at 75% of calculated size
+  - `Auto - Large`: Fits text at 100% (fills available width)
+  - Supports Korean/CJK characters with proper width weighting
+
+- **😀 Emoji Auto-Removal**: Automatically removes emojis from text
+  - Prevents broken/garbled characters in rendered output
+  - Emojis are stripped before rendering
+
+- **↕️ Line Spacing**: Adjustable spacing between lines
+  - Default 10px, configurable for multi-line text
+
+- **📝 Multi-line Text Alignment**: Text alignment for multi-line text
+  - Left, Center, Right alignment options
+
 ### v1.6.24
 **Bug Fixes**
 
