@@ -573,8 +573,11 @@ export class MediaFX implements INodeType {
 								fontKey: this.getNodeParameter('imageTextFontKey', i, 'noto-sans-kr'),
 								size: sizeMode === 'fixed'
 									? this.getNodeParameter('imageTextSize', i, 48)
-									: sizeMode, // Pass 'auto-small', 'auto-medium', or 'auto-large'
+									: sizeMode, // Pass 'auto-small', 'auto-medium', 'auto-large', 'auto-xlarge', 'auto-huge', 'auto-max'
 								color: this.getNodeParameter('imageTextColor', i, 'white'),
+								enableLineColors: this.getNodeParameter('imageTextEnableLineColors', i, false),
+								line1Color: this.getNodeParameter('imageTextLine1Color', i, 'white'),
+								line2Color: this.getNodeParameter('imageTextLine2Color', i, 'yellow'),
 								textAlign: this.getNodeParameter('imageTextAlign', i, 'left'),
 								lineSpacing: this.getNodeParameter('imageTextLineSpacing', i, 10),
 								outlineWidth: this.getNodeParameter('imageTextOutlineWidth', i, 0),

@@ -10,6 +10,23 @@ This is a custom n8n node for comprehensive, local media processing using FFmpeg
 
 ## 🆕 What's New in This Fork
 
+### v1.6.29
+**New Features**
+
+- **📐 Extended Auto Font Size**: Added larger size options
+  - `Auto - Extra Large`: 110% of calculated size
+  - `Auto - Huge`: 120% of calculated size
+  - `Auto - Maximum`: 130% of calculated size
+
+- **🎨 Per-Line Color Support**: Different colors for each line in multi-line text
+  - Enable Line Colors toggle
+  - Line 1 Color and Line 2 Color options
+  - Lines 3+ automatically use Line 1 color
+
+- **🎬 Match Audio Length (Mix Audio)**: Two new output length options
+  - `Match Audio (Loop/Trim Video)`: Loop video if shorter, trim if longer than audio
+  - `Match Audio (Adjust Speed)`: Adjust video playback speed to exactly match audio duration
+
 ### v1.6.28
 **New Features**
 
@@ -172,7 +189,7 @@ npm install @lee-jisoo/n8n-nodes-mediafx
 | Operation | Description |
 |-----------|-------------|
 | **Extract** | Extract audio from video (MP3, WAV, AAC, FLAC) |
-| **Mix** | Mix audio tracks with volume control, partial mixing, looping, fade effects |
+| **Mix** | Mix audio tracks with volume control, partial mixing, looping, fade effects, **match audio length** ⭐ NEW |
 
 ### Image Operations
 | Operation | Description |

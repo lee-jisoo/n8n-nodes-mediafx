@@ -99,9 +99,12 @@ export const imageProperties: INodeProperties[] = [
 		type: 'options',
 		options: [
 			{ name: 'Fixed (px)', value: 'fixed' },
-			{ name: 'Auto - Small', value: 'auto-small', description: 'Automatically fit text, smaller size' },
-			{ name: 'Auto - Medium', value: 'auto-medium', description: 'Automatically fit text, medium size' },
-			{ name: 'Auto - Large', value: 'auto-large', description: 'Automatically fit text, fills available width' },
+			{ name: 'Auto - Small', value: 'auto-small', description: 'Automatically fit text, smaller size (50%)' },
+			{ name: 'Auto - Medium', value: 'auto-medium', description: 'Automatically fit text, medium size (75%)' },
+			{ name: 'Auto - Large', value: 'auto-large', description: 'Automatically fit text, fills available width (100%)' },
+			{ name: 'Auto - Extra Large', value: 'auto-xlarge', description: 'Automatically fit text, larger than full width (110%)' },
+			{ name: 'Auto - Huge', value: 'auto-huge', description: 'Automatically fit text, very large (120%)' },
+			{ name: 'Auto - Maximum', value: 'auto-max', description: 'Automatically fit text, maximum size (130%)' },
 		],
 		default: 'fixed',
 		displayOptions: {
@@ -140,7 +143,48 @@ export const imageProperties: INodeProperties[] = [
 				operation: ['addTextToImage'],
 			},
 		},
-		description: 'Text color (e.g., white, #FF0000, rgb(255,0,0))',
+		description: 'Text color (e.g., white, #FF0000, rgb(255,0,0)). Used for all lines or as default color.',
+	},
+	{
+		displayName: 'Enable Line Colors',
+		name: 'imageTextEnableLineColors',
+		type: 'boolean',
+		default: false,
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+			},
+		},
+		description: 'Enable different colors for each line (up to 2 lines). Lines 3+ will use Line 1 color.',
+	},
+	{
+		displayName: 'Line 1 Color',
+		name: 'imageTextLine1Color',
+		type: 'string',
+		default: 'white',
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+				imageTextEnableLineColors: [true],
+			},
+		},
+		description: 'Color for the first line (e.g., white, #FF0000, yellow)',
+	},
+	{
+		displayName: 'Line 2 Color',
+		name: 'imageTextLine2Color',
+		type: 'string',
+		default: 'yellow',
+		displayOptions: {
+			show: {
+				resource: ['image'],
+				operation: ['addTextToImage'],
+				imageTextEnableLineColors: [true],
+			},
+		},
+		description: 'Color for the second line. Lines 3+ will use Line 1 color.',
 	},
 	{
 		displayName: 'Text Alignment (Multi-line)',

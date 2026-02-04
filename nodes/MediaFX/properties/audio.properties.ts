@@ -275,6 +275,8 @@ export const audioProperties: INodeProperties[] = [
 			{ name: 'Shortest', value: 'shortest' },
 			{ name: 'Longest', value: 'longest' },
 			{ name: 'From Primary Source', value: 'first' },
+			{ name: 'Match Audio (Loop/Trim Video)', value: 'audio', description: 'Adjust video length to match audio: loop if shorter, trim if longer' },
+			{ name: 'Match Audio (Adjust Speed)', value: 'audio-speed', description: 'Adjust video playback speed to exactly match audio duration' },
 		],
 		default: 'shortest',
 	},

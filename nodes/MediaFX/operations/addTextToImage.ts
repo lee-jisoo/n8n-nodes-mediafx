@@ -123,6 +123,9 @@ function calculateAutoFontSize(
 		'auto-small': 0.5,
 		'auto-medium': 0.75,
 		'auto-large': 1.0,
+		'auto-xlarge': 1.1,
+		'auto-huge': 1.2,
+		'auto-max': 1.3,
 	};
 	const multiplier = sizeMultipliers[sizeOption] || 0.75;
 	let fontSize = Math.floor(baseFontSize * multiplier);
@@ -170,7 +173,7 @@ export async function executeAddTextToImage(
 	// Handle font size - support auto sizing options
 	let fontSize: number;
 	const sizeOption = options.size;
-	const autoSizeOptions = ['auto-small', 'auto-medium', 'auto-large'];
+	const autoSizeOptions = ['auto-small', 'auto-medium', 'auto-large', 'auto-xlarge', 'auto-huge', 'auto-max'];
 
 	if (typeof sizeOption === 'string' && autoSizeOptions.includes(sizeOption)) {
 		// Auto font size - need to get image dimensions first
@@ -189,6 +192,11 @@ export async function executeAddTextToImage(
 	const fontColor = options.color || 'white';
 	const lineSpacing = (options.lineSpacing as number) ?? 10;
 	const horizontalAlign = (options.horizontalAlign as string) || 'center';
+
+	// Line-specific colors
+	const enableLineColors = options.enableLineColors || false;
+	const line1Color = (options.line1Color as string) || fontColor;
+	const line2Color = (options.line2Color as string) || fontColor;
 
 	// Outline options
 	const outlineWidth = options.outlineWidth || 0;
@@ -228,6 +236,19 @@ export async function executeAddTextToImage(
 		const line = lines[i];
 		const escapedLine = line.replace(/'/g, `''`);
 
+		// Determine color for this line
+		let lineColor = fontColor;
+		if (enableLineColors) {
+			if (i === 0) {
+				lineColor = line1Color;
+			} else if (i === 1) {
+				lineColor = line2Color;
+			} else {
+				// Lines 3+ use Line 1 color
+				lineColor = line1Color;
+			}
+		}
+
 		// Calculate X position based on horizontal alignment
 		let lineX: string;
 		switch (horizontalAlign) {
@@ -265,7 +286,7 @@ export async function executeAddTextToImage(
 		}
 
 		// Build drawtext for this line
-		let drawtext = `drawtext=fontfile=${fontPath}:text='${escapedLine}':fontsize=${fontSize}:fontcolor=${fontColor}:x=${lineX}:y=${lineY}`;
+		let drawtext = `drawtext=fontfile=${fontPath}:text='${escapedLine}':fontsize=${fontSize}:fontcolor=${lineColor}:x=${lineX}:y=${lineY}`;
 
 		// Add outline (border) if width > 0
 		if (outlineWidth > 0) {
