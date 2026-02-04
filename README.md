@@ -10,6 +10,14 @@ This is a custom n8n node for comprehensive, local media processing using FFmpeg
 
 ## 🆕 What's New in This Fork
 
+### v1.6.30
+**Improvements**
+
+- **🧹 Temp File Cleanup**: Now runs on every execution instead of 10% probability
+  - More reliable cleanup of orphaned temporary files
+  - Files older than 24 hours are automatically removed
+  - Reduces disk space usage from crashed/interrupted workflows
+
 ### v1.6.29
 **New Features**
 

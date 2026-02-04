@@ -140,12 +140,10 @@ export class MediaFX implements INodeType {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 
-		// Periodically clean up old temporary files (every 10th execution)
-		if (Math.random() < 0.1) {
-			cleanupOldTempFiles(24).catch(() => {
-				// Ignore cleanup errors to avoid disrupting main operation
-			});
-		}
+		// Clean up old temporary files (files older than 24 hours)
+		cleanupOldTempFiles(24).catch(() => {
+			// Ignore cleanup errors to avoid disrupting main operation
+		});
 
 		for (let i = 0; i < items.length; i++) {
 			let cleanup = async () => {}; // Initialize cleanup function for each iteration
