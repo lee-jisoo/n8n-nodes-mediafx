@@ -8,6 +8,8 @@
 
 This is a custom n8n node for comprehensive, local media processing using FFmpeg. It allows you to perform a wide range of video, audio, image, and text operations directly within your n8n workflows without needing any external API or service.
 
+<a href="https://www.buymeacoffee.com/leejisoo" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50" width="217"></a>
+
 ## 🆕 What's New in This Fork
 
 ### v1.6.30
