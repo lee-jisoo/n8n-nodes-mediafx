@@ -184,11 +184,11 @@ export async function executeMixAudio(
 					videoFilter + ';' +
 					videoAudioFilter + ';' +
 					audioProcessingChain + ';' +
-					`[a0][a1]amix=inputs=2:duration=longest:dropout_transition=0[a]`;
+					`[a0][a1]amix=inputs=2:duration=shortest:dropout_transition=0[a]`;
 
 				command
 					.complexFilter(filterComplex)
-					.outputOptions(['-map', '[v_adjusted]', '-map', '[a]', '-t', `${audioDuration}`]);
+					.outputOptions(['-map', '[v_adjusted]', '-map', '[a]']);
 			} else {
 				// 'audio' mode: Loop or trim video to match audio length
 				let videoFilter: string;
