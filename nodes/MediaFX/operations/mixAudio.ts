@@ -160,9 +160,8 @@ export async function executeMixAudio(
 				// Adjust video speed to match audio duration
 				const speedRatio = videoDuration / audioDuration;
 
-				// Video: use setpts to adjust speed, then tpad to clone last frame indefinitely
-				// so the video stream never ends before the audio. Output -t will trim to exact duration.
-				const videoFilter = `[0:v]setpts=PTS/${speedRatio},tpad=stop=-1:stop_mode=clone[v_adjusted]`;
+				// Video: use setpts to adjust speed
+				const videoFilter = `[0:v]setpts=PTS/${speedRatio}[v_adjusted]`;
 
 				// Original video audio: adjust with atempo
 				// atempo only accepts 0.5 to 2.0, so chain multiple if needed

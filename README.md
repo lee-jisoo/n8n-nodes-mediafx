@@ -12,12 +12,17 @@ This is a custom n8n node for comprehensive, local media processing using FFmpeg
 
 ## 🆕 What's New in This Fork
 
+### v1.6.35
+**Bug Fixes**
+
+- **🔊 Mix Audio (Audio-Speed mode)**: Fixed infinite execution caused by `tpad` generating endless video stream
+- **📦 Package size reduced** from ~12MB to ~6MB by removing duplicate font files
+
 ### v1.6.34
 **Bug Fixes**
 
 - **🔊 Mix Audio (Audio-Speed mode)**: Fixed last portion of audio being silenced
   - Changed `amix` duration to `shortest` so output ends when secondary audio ends
-  - Prevents silent tail caused by decoded audio being slightly shorter than metadata duration
 
 ### v1.6.33
 **Bug Fixes**
