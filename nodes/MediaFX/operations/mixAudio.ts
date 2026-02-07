@@ -160,10 +160,9 @@ export async function executeMixAudio(
 				// Adjust video speed to match audio duration
 				const speedRatio = videoDuration / audioDuration;
 
-				// Video: use setpts to adjust speed (PTS/speed = slower, PTS*speed = faster)
-				// If speedRatio > 1, video is longer than audio, need to speed up (smaller PTS)
-				// If speedRatio < 1, video is shorter than audio, need to slow down (larger PTS)
-				const videoFilter = `[0:v]setpts=PTS/${speedRatio}[v_adjusted]`;
+				// Video: use setpts to adjust speed, then tpad to clone last frame indefinitely
+				// so the video stream never ends before the audio. Output -t will trim to exact duration.
+				const videoFilter = `[0:v]setpts=PTS/${speedRatio},tpad=stop=-1:stop_mode=clone[v_adjusted]`;
 
 				// Original video audio: adjust with atempo
 				// atempo only accepts 0.5 to 2.0, so chain multiple if needed
@@ -185,11 +184,11 @@ export async function executeMixAudio(
 					videoFilter + ';' +
 					videoAudioFilter + ';' +
 					audioProcessingChain + ';' +
-					`[a0][a1]amix=inputs=2:duration=first:dropout_transition=0[a]`;
+					`[a0][a1]amix=inputs=2:duration=longest:dropout_transition=0[a]`;
 
 				command
 					.complexFilter(filterComplex)
-					.outputOptions(['-map', '[v_adjusted]', '-map', '[a]']);
+					.outputOptions(['-map', '[v_adjusted]', '-map', '[a]', '-t', `${audioDuration}`]);
 			} else {
 				// 'audio' mode: Loop or trim video to match audio length
 				let videoFilter: string;

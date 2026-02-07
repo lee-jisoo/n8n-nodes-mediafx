@@ -12,6 +12,14 @@ This is a custom n8n node for comprehensive, local media processing using FFmpeg
 
 ## 🆕 What's New in This Fork
 
+### v1.6.33
+**Bug Fixes**
+
+- **🔊 Mix Audio (Audio-Speed mode)**: Fixed audio being cut off ~1 second before the end
+  - Added `tpad` to prevent video stream from ending before audio
+  - Changed `amix` duration strategy to `longest` to preserve full audio length
+  - Added explicit output duration to guarantee exact audio-matched length
+
 ### v1.6.30
 **Improvements**
 
