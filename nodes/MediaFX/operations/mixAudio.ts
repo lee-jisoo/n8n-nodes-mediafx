@@ -179,7 +179,7 @@ export async function executeMixAudio(
 				}
 				atempoChain += `atempo=${remainingRatio}`;
 
-				const videoAudioFilter = `[0:a]${atempoChain},volume=${videoVolume}[a0]`;
+				const videoAudioFilter = `[0:a]${atempoChain},volume=${videoVolume},apad,atrim=duration=${audioDuration},asetpts=PTS-STARTPTS[a0]`;
 
 				const filterComplex =
 					videoFilter + ';' +
